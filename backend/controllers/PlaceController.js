@@ -25,59 +25,84 @@ export const getLatestPlaces = async (req, res) => {
 };
 
 export const createPlace = async (req, res) => {
-  const place = req.body;
+  const {
+    name, description, location, district,
+    category, contactNumber, workingHours, petsAllowed,
+  } = req.body;
+
+  const imageFiles = req.files?.images || [];
 
   if (
-    !place.name ||
-    !place.description ||
-    !place.location ||
-    !place.district ||
-    !place.image ||
-    !place.category ||
-    !place.contactNumber ||
-    !place.workingHours
+    !name || !description || !location || !district ||
+    !category || !contactNumber || !workingHours || imageFiles.length === 0
   ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Please provide all required fields" });
+    return res.status(400).json({ success: false, message: "Missing required fields or image" });
   }
 
   try {
-    // Check for duplicate place by name and category
-    const existingPlace = await Place.findOne({
-      name: place.name
-    });
-
+    const existingPlace = await Place.findOne({ name });
     if (existingPlace) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Place already exists" });
+      return res.status(409).json({ success: false, message: "Place already exists" });
     }
 
-    const newPlace = new Place(place);
+    const imageFilenames = imageFiles.map(file => file.filename);
+
+    const newPlace = new Place({
+      name,
+      description,
+      location,
+      district,
+      category,
+      contactNumber,
+      workingHours,
+      petsAllowed: petsAllowed === 'true' || petsAllowed === true,
+      images: imageFilenames,
+    });
+
     await newPlace.save();
     res.status(201).json({ success: true, data: newPlace });
   } catch (error) {
-    console.error("Error in creating place:", error.message);
+    console.error("Place creation error:", error.message);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 export const updatePlace = async (req, res) => {
-    const {id} = req.params;
-    const place = req.body; // user will send this data
+  const { id } = req.params;
 
-    if(!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({success:false, message: "Invalid place ID"});
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ success: false, message: "Invalid place ID" });
+  }
+
+  try {
+    const {
+      name, description, location, district,
+      category, contactNumber, workingHours, petsAllowed
+    } = req.body;
+
+    const imageFiles = req.files?.images || [];
+
+    const updatedFields = {
+      name,
+      description,
+      location,
+      district,
+      category,
+      contactNumber,
+      workingHours,
+      petsAllowed: petsAllowed === 'true' || petsAllowed === true,
+    };
+
+    if (imageFiles.length > 0) {
+      updatedFields.images = imageFiles.map(file => file.filename);
     }
 
-    try {
-       const updatedPlace = await Place.findByIdAndUpdate(id, place, {new: true}); // update the place with the new data
-       res.status(200).json({success:true, data: updatedPlace});
-    } catch (error) {
-        res.status(500).json({success:false, message: "Server error"});
-
-    }
+    const updatedPlace = await Place.findByIdAndUpdate(id, updatedFields, { new: true });
+    res.status(200).json({ success: true, data: updatedPlace });
+  } catch (error) {
+    console.error("Error updating place:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
 
 export const deletePlace = async (req, res) => {
@@ -94,4 +119,34 @@ export const deletePlace = async (req, res) => {
     console.log("Error in deleting place:", error.message);
     res.status(500).json({success:false, message: "Server error"});
    }
+};
+
+export const getUniqueFilters = async (req, res) => {
+  try {
+    const categories = await Place.distinct("category");
+    const districts = await Place.distinct("district");
+    res.status(200).json({ success: true, categories, districts });
+  } catch (error) {
+    console.error("Error fetching filters:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const searchPlaces = async (req, res) => {
+  const query = req.query.q;
+
+  if (!query) {
+    return res.status(400).json({ success: false, message: "Search query missing" });
+  }
+
+  try {
+    const results = await Place.find({
+      name: { $regex: query, $options: "i" } // case-insensitive search
+    });
+
+    res.status(200).json({ success: true, data: results });
+  } catch (error) {
+    console.error("Search error:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };

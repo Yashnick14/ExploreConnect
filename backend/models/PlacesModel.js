@@ -17,10 +17,11 @@ const placeSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    image: {
-        type: String,
-        required: true
-    },   
+    images: {
+    type: [String],
+    required: true,
+    validate: v => Array.isArray(v) && v.length > 0
+    },
     category: { 
         type: String, 
         required: true 
