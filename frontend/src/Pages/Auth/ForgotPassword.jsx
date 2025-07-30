@@ -21,7 +21,10 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+     await sendPasswordResetEmail(auth, email, {
+      url: "https://exploreconnect-f5a02.web.app/reset-password",
+      handleCodeInApp: true,
+    });
       toast.success("Reset link sent to your email");
     } catch (error) {
       console.error("Password reset error:", error.message);

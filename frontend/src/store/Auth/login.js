@@ -35,7 +35,7 @@ export const useLoginStore = create((set) => ({
           fullName: user.fullName,
           username: user.username,
           phoneNumber: user.phoneNumber,
-          role: user.role, // 🟢 Return user role here
+          role: user.role, 
         }
       };
 

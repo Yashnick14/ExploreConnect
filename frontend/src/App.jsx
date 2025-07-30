@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import HomePage from "./Pages/Home/HomePage";
-import CreatePage from "./Pages/Admin/CreatePage";
 import Navbar from "./Components/Navbar";
 import { Toaster } from "react-hot-toast";
 import Register from "./Pages/Auth/Register";
@@ -15,10 +14,11 @@ import Footer from "./Components/Footer";
 import Membership from "./Pages/User/Membership";
 import Profile from "./Pages/User/Profile";
 import About from "./Pages/User/About";
+import UserManagement from "./Pages/Admin/UserManagement";
 
 function App() {
   const location = useLocation();
-  const adminRoutes = ["/admin-dashboard", "/create", "/place-management"];
+  const adminRoutes = ["/admin-dashboard", "/user-management", "/place-management"];
   const isAdminRoute = adminRoutes.includes(location.pathname);
 
   return (
@@ -30,7 +30,6 @@ function App() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/create" element={<CreatePage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -38,6 +37,7 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/places" element={<Places />} />
           <Route path="/place-management" element={<PlaceManagement />} />
+          <Route path="/user-management" element={<UserManagement />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />

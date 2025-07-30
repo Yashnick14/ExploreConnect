@@ -41,6 +41,7 @@ export const firebaseRegister = async (req, res) => {
   }
 };
 
+
 // LOGIN
 export const firebaseLogin = async (req, res) => {
   const { idToken } = req.body;
@@ -52,7 +53,6 @@ export const firebaseLogin = async (req, res) => {
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
-    // ✅ Fix here: fallback to Google identity if no email
     const uid = decodedToken.uid;
     const email =
       decodedToken.email ||
@@ -65,7 +65,6 @@ export const firebaseLogin = async (req, res) => {
 
     let user = await User.findOne({ uid });
 
-    // ✅ Auto-register if not found
     if (!user) {
       user = new User({
         uid,
@@ -74,16 +73,23 @@ export const firebaseLogin = async (req, res) => {
         username: email.split("@")[0],
         phoneNumber: "",
         role: email === process.env.ADMIN_EMAIL ? "admin" : "user",
+        status: "Active", // Default new users to Active
       });
       await user.save();
-      console.log("🆕 User auto-registered:", user.email);
     }
 
-    // ✅ Promote to admin if matches
+    // Promote to admin if email matches
     if (email === process.env.ADMIN_EMAIL && user.role !== "admin") {
       user.role = "admin";
       await user.save();
-      console.log("👑 Role upgraded to admin for:", email);
+    }
+
+    // ❌ Block login if user is inactive
+    if (user.status === "inactive") {
+      return res.status(403).json({
+        success: false,
+        message: "Account deactivated. Please contact support.",
+      });
     }
 
     res.status(200).json({
@@ -96,6 +102,7 @@ export const firebaseLogin = async (req, res) => {
         email: user.email,
         phoneNumber: user.phoneNumber,
         role: user.role,
+        status: user.status,
       },
     });
   } catch (err) {
@@ -106,6 +113,7 @@ export const firebaseLogin = async (req, res) => {
     });
   }
 };
+
 
 // FORGOT PASSWORD 
 export const forgotPassword = async (req, res) => {
@@ -124,7 +132,11 @@ export const forgotPassword = async (req, res) => {
     }
 
     // ✅ Generate reset link
-    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    const resetLink = await admin.auth().generatePasswordResetLink(email, {
+      url: "https://exploreconnect-f5a02.web.app/reset-password",
+      handleCodeInApp: true,
+    });
+
 
     // For now, just log it or return it — or ideally, send via your own email system
     console.log("Reset Link:", resetLink);

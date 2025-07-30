@@ -1,104 +1,116 @@
+// src/Pages/Auth/ResetPassword.jsx
+
 import React, { useState, useEffect } from "react";
 import { confirmPasswordReset } from "firebase/auth";
 import { auth } from "../../Firebase";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import bgImage from "../../assets/login.jpg";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const oobCode = searchParams.get("oobCode");
+  const mode = searchParams.get("mode");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
+
+  // ✅ Redirect if URL is invalid
+  useEffect(() => {
+    if (mode !== "resetPassword" || !oobCode) {
+      toast.error("Invalid or expired reset link");
+      navigate("/login");
+    }
+  }, [mode, oobCode, navigate]);
 
   const handleReset = async (e) => {
     e.preventDefault();
 
-    if (!password || !confirmPassword) return toast.error("Fill in both fields");
-    if (password !== confirmPassword) return toast.error("Passwords do not match");
+    if (!password || !confirmPassword) {
+      toast.error("Please fill in both fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
 
     setLoading(true);
     try {
       await confirmPasswordReset(auth, oobCode, password);
-      toast.success("✅ Password changed successfully!");
-      navigate("/login");
+      toast.success(" Password changed successfully!");
+      navigate("/login", { replace: true }); // ✅ Removes oobCode from URL
     } catch (err) {
-      console.error(err.message);
-      toast.error("❌ " + err.message);
+      console.error("Reset error:", err);
+      if (err.code === "auth/expired-action-code") {
+        toast.error("This reset link has already been used or expired.");
+      } else if (err.code === "auth/invalid-action-code") {
+        toast.error("Invalid reset link.");
+      } else {
+        toast.error("❌ " + err.message);
+      }
     }
     setLoading(false);
   };
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleReset} style={styles.form}>
-        <h2 style={styles.heading}>Reset Your Password</h2>
-        <input
-          type="password"
-          placeholder="New Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          style={styles.input}
-          required
-        />
-        <button type="submit" disabled={loading} style={styles.button}>
-          {loading ? "Resetting..." : "Reset Password"}
-        </button>
-      </form>
+    <div
+      className="h-screen w-full bg-cover bg-center flex items-center justify-center font-sans"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      <div className="bg-white/90 p-10 rounded-2xl max-w-md w-full text-center shadow-xl">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">
+          RESET YOUR PASSWORD
+        </h2>
+
+        <form onSubmit={handleReset}>
+          <input
+            type="password"
+            placeholder="New Password"
+            value={password}
+            required
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            required
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full p-3 mb-4 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-3 text-white font-semibold text-base rounded-md ${
+              loading
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-black hover:bg-gray-900"
+            } transition-transform`}
+          >
+            {loading ? "Resetting..." : "Reset Password"}
+          </button>
+        </form>
+
+        <p className="text-xs mt-6 text-left text-gray-700">
+          GO BACK TO LOGIN?{" "}
+          <Link
+            to="/login"
+            className="underline text-black hover:text-blue-600"
+          >
+            CLICK HERE
+          </Link>
+        </p>
+      </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    background: "#f3f4f6",
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  form: {
-    background: "#fff",
-    padding: "2rem",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-    maxWidth: "400px",
-    width: "100%",
-    display: "flex",
-    flexDirection: "column",
-    gap: "1rem",
-  },
-  heading: {
-    textAlign: "center",
-    fontSize: "1.5rem",
-    color: "#333",
-  },
-  input: {
-    padding: "0.75rem",
-    fontSize: "1rem",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-  },
-  button: {
-    padding: "0.75rem",
-    fontSize: "1rem",
-    background: "#4f46e5",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
 };
 
 export default ResetPassword;

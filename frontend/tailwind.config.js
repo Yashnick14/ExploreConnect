@@ -9,6 +9,7 @@ export default {
       fontFamily: {
         outfit: ['Outfit', 'sans-serif'],
         playfair: ['Playfair', 'serif'],
+        openSans: ['Open Sans', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-out',

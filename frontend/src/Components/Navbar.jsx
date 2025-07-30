@@ -71,22 +71,22 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="absolute top-0 left-0 w-full z-[1000] bg-white/30 backdrop-blur-md text-black">
+    <nav className="absolute top-0 left-0 w-full z-[1000] bg-white/60 backdrop-blur-md text-black">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left - Logo */}
-        <div className="text-xl font-bold text-gray-200">
+        <div className=" text-xl font-bold text-gray-900">
           <Link to="/">EXPLORECONNECT</Link>
         </div>
 
         {/* Center - Nav Links */}
-        <div className="hidden lg:flex gap-8">
-          <Link to="/membership" className="text-gray-100 font-medium hover:text-emerald-900">
+        <div className="nav-headings hidden lg:flex gap-8">
+          <Link to="/membership" className="text-gray-800 font-medium hover:text-emerald-900">
             Membership
           </Link>
-          <Link to="/places" className="text-gray-100 font-medium hover:text-emerald-900">
+          <Link to="/places" className="text-gray-800 font-medium hover:text-emerald-900">
             Places
           </Link>
-          <Link to="/about" className="text-gray-100 font-medium hover:text-emerald-900">
+          <Link to="/about" className="text-gray-800 font-medium hover:text-emerald-900">
             About
           </Link>
         </div>
@@ -115,9 +115,11 @@ const Navbar = () => {
               isMobile={false}
             />
           </div>
-
-          <Link to="/login" className="text-gray-100 font-medium hover:text-emerald-900">Login</Link>
-          <Link to="/profile" className="text-gray-100 font-medium hover:text-emerald-900">
+          <div>
+            
+          </div>
+          <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-emerald-900">Login</Link>
+          <Link to="/profile" className="nav-headings text-gray-800 font-medium hover:text-emerald-900">
             <FaRegUser />
           </Link>
         </div>

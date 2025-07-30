@@ -1,2 +1,4 @@
 .env
 /node_modules
+backend/firebaseServiceAccount.json
+frontend/src/Firebase.js

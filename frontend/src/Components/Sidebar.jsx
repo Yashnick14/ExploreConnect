@@ -24,9 +24,12 @@ const Sidebar = () => {
         >
           <HiOutlineLocationMarker className="text-emerald-300" /> Places
         </Link>
-        <button className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition">
+        <Link
+          to="/user-management"
+          className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition"
+        >
           <HiOutlineUserGroup className="text-emerald-300" /> Users
-        </button>
+        </Link>
         <button className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition">
           <HiOutlineCog className="text-emerald-300" /> Settings
         </button>

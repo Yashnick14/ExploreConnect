@@ -34,7 +34,7 @@ const Places = () => {
   const uniqueDistricts = [...new Set(places.map((p) => p.district))];
 
   return (
-    <div className="relative bg-gray-100 min-h-screen p-5">
+    <div className="relative bg-sky-50 min-h-screen p-5 pt-24">
       {/* Header with Filter Icon */}
       <div className="flex justify-center items-center relative mb-8">
         <h1 className="text-3xl font-bold text-center">

@@ -38,14 +38,22 @@ const Login = () => {
         toast.error(response.data.message || "Login failed");
       }
     } catch (err) {
+      const message = err?.response?.data?.message;
+
+      // Account deactivated case
+      if (err.response?.status === 403 && message?.includes("deactivated")) {
+        toast.error(" Your account has been deactivated. Contact support.");
+        return;
+      }
+
+      // 🔁 Attempt auto-register if user not found
       if (
         err.response?.data?.message === "User not found" &&
         userInfo !== null
       ) {
-        // 🔁 Try auto-register
         await registerAndRetryLogin(idToken, userInfo);
       } else {
-        toast.error("Server error: " + err.message);
+        toast.error(message || "Server error");
       }
     }
   };
@@ -61,7 +69,7 @@ const Login = () => {
 
       await axios.post("/api/users/auth/firebase/register", payload);
 
-      // Retry login
+      // Retry login after register
       await authenticateUser(idToken);
     } catch (err) {
       toast.error("Registration failed: " + err.message);

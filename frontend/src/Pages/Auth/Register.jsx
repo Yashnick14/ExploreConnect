@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import app from "../../Firebase";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import bgImage from "../../assets/login.jpg"; // ✅ use same background image as login
 
 const Register = () => {
   const navigate = useNavigate();
@@ -36,28 +37,28 @@ const Register = () => {
     try {
       setLoading(true);
 
-      // Firebase Registration
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
+      const firebaseUid = userCredential.user.uid; // ✅ Get UID
 
-      // Send to Backend
       const response = await axios.post("/api/users/auth/firebase/register", {
         idToken,
         fullName,
         username,
         phoneNumber,
+        firebaseUid, // ✅ Send UID to backend
       });
 
       if (response.data.success) {
         toast.success("Registration successful!");
-        navigate("/login");
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000); // ⏳ 3 seconds
       } else {
         toast.error(response.data.message || "Registration failed");
       }
     } catch (error) {
       console.error("Register error:", error);
-
-      // Handle Firebase Duplicate Email
       if (error.code === "auth/email-already-in-use") {
         toast.error("Email already exists");
       } else {
@@ -68,82 +69,88 @@ const Register = () => {
     }
   };
 
-return (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-gray-100 to-gray-400 px-4 animate-fade-in">
-    <div className="flex flex-col items-center w-full max-w-md space-y-6">
-      <h2 className="text-white text-3xl md:text-4xl font-bold text-center mt-10">
-        EXPLORE WITH <span className="text-white">EXPLORECONNECT</span>
-      </h2>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-2xl shadow-xl w-full flex flex-col gap-5 animate-fade-in-up"
-      >
-        <input
-          type="text"
-          name="fullName"
-          placeholder="Full Name"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="text"
-          name="phoneNumber"
-          placeholder="Phone Number"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <input
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          required
-          onChange={handleChange}
-          className="p-3 rounded-md border border-gray-300 bg-gray-100 text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`py-3 rounded-md font-semibold text-white transition-all duration-200 ${
-            loading
-              ? "bg-indigo-300 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-1"
-          }`}
-        >
-          {loading ? "Registering..." : "Register"}
-        </button>
-      </form>
+  return (
+    <div
+      className="h-screen w-full bg-cover bg-center flex items-center justify-center font-sans"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      <div className="bg-white/90 p-10 rounded-2xl max-w-md w-full text-center shadow-xl">
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">CREATE ACCOUNT</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
+          <input
+            type="text"
+            name="fullName"
+            placeholder="Full Name"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+          <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+          <input
+            type="text"
+            name="phoneNumber"
+            placeholder="Phone Number"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            required
+            onChange={handleChange}
+            className="w-full p-3 border border-gray-300 rounded-md text-base text-black bg-white"
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-3 text-white font-semibold text-base rounded-md ${
+              loading
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-black hover:bg-gray-900"
+            } transition-transform`}
+          >
+            {loading ? "Registering..." : "REGISTER"}
+          </button>
+        </form>
+
+        <p className="text-xs mt-6 text-left text-gray-700">
+          ALREADY HAVE AN ACCOUNT?{" "}
+          <Link to="/login" className="underline text-black hover:text-blue-600">
+            LOGIN HERE
+          </Link>
+        </p>
+      </div>
     </div>
-  </div>
-);
-
+  );
 };
 
 export default Register;

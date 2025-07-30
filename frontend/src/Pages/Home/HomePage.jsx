@@ -80,7 +80,7 @@ const HomePage = () => {
                     {hero.subtext}
                   </p>
 
-                  {index === 0 && (
+                  {/* {index === 0 && (
                     <div className="flex items-center justify-center bg-white/20 border border-white/30 backdrop-blur-md rounded-full h-10 max-w-[340px] sm:max-w-[380px] w-full mx-auto shadow-lg px-4">
                       <CiSearch className="text-white text-lg mr-2" />
                       <input
@@ -89,7 +89,7 @@ const HomePage = () => {
                         className="flex-1 bg-transparent outline-none text-white placeholder-white/80 text-sm sm:text-base"
                       />
                     </div>
-                  )}
+                  )} */}
 
                   {index === 1 && (
                     <button className="mt-4 px-6 py-2 text-sm font-semibold bg-white/10 border border-white/30 rounded-full backdrop-blur-md hover:bg-white/20 transition">
