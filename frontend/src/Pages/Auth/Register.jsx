@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import app from "../../Firebase";
-import axios from "axios";
+import { getAuth } from "firebase/auth";
+import { useRegisterStore } from "../../store/Auth/register"; // your zustand store path
+import bgImage from "../../assets/login.jpg";
 import { toast } from "react-hot-toast";
-import bgImage from "../../assets/login.jpg"; // ✅ use same background image as login
+
 
 const Register = () => {
   const navigate = useNavigate();
-  const auth = getAuth(app);
+  const auth = getAuth();
+  const { registerUser, loading } = useRegisterStore();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -19,14 +20,13 @@ const Register = () => {
     confirmPassword: "",
   });
 
-  const [loading, setLoading] = useState(false);
-
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const { fullName, username, phoneNumber, email, password, confirmPassword } = formData;
 
     if (password !== confirmPassword) {
@@ -34,42 +34,24 @@ const Register = () => {
       return;
     }
 
-    try {
-      setLoading(true);
+    const result = await registerUser({
+      fullName,
+      username,
+      phoneNumber,
+      email,
+      password,
+      confirmPassword,
+    });
 
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      const firebaseUid = userCredential.user.uid; // ✅ Get UID
-
-      const response = await axios.post("/api/users/auth/firebase/register", {
-        idToken,
-        fullName,
-        username,
-        phoneNumber,
-        firebaseUid, // ✅ Send UID to backend
-      });
-
-      if (response.data.success) {
-        toast.success("Registration successful!");
-        setTimeout(() => {
-          navigate("/login");
-        }, 3000); // ⏳ 3 seconds
-      } else {
-        toast.error(response.data.message || "Registration failed");
-      }
-    } catch (error) {
-      console.error("Register error:", error);
-      if (error.code === "auth/email-already-in-use") {
-        toast.error("Email already exists");
-      } else {
-        toast.error(error.response?.data?.message || "Something went wrong");
-      }
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      toast.success(
+        "Registration successful! You can now login."
+      );
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000); // Give user 3 seconds to read message
     }
   };
-
-
 
   return (
     <div
@@ -133,9 +115,7 @@ const Register = () => {
             type="submit"
             disabled={loading}
             className={`w-full py-3 text-white font-semibold text-base rounded-md ${
-              loading
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-black hover:bg-gray-900"
+              loading ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"
             } transition-transform`}
           >
             {loading ? "Registering..." : "REGISTER"}

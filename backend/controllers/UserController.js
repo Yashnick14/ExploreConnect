@@ -12,7 +12,6 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// Deactivate or Activate a user
 export const toggleUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -33,8 +32,6 @@ export const toggleUserStatus = async (req, res) => {
   }
 };
 
-
-// Delete a user
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

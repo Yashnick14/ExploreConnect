@@ -134,9 +134,9 @@ const PlaceManagement = () => {
           <h2 className="text-2xl font-bold">Manage Places</h2>
           <div className="space-x-2">
             <button className="bg-black text-white px-4 py-2 rounded">All</button>
-            <button onClick={() => setShowModal(true)} className="bg-green-600 text-white px-4 py-2 rounded">ADD</button>
-            <button onClick={handleEdit} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>EDIT</button>
-            <button onClick={handleDelete} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'}`}>DELETE</button>
+            <button onClick={() => setShowModal(true)} className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded">ADD</button>
+            <button onClick={handleEdit} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-black hover:bg-gray-800'}`}>EDIT</button>
+            <button onClick={handleDelete} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-black hover:bg-gray-800'}`}>DELETE</button>
           </div>
         </div>
 

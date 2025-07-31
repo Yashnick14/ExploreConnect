@@ -1,13 +1,25 @@
 import { create } from "zustand";
 import { toast } from "react-hot-toast";
-import { createUserWithEmailAndPassword, getAuth, updateProfile } from "firebase/auth";
-import { app } from "../../../Firebase"; // ✅ path to your Firebase config
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  updateProfile,
+} from "firebase/auth";
+import app, { auth } from "../../Firebase";
 import axios from "axios";
+
 
 export const useRegisterStore = create((set) => ({
   loading: false,
 
-  registerUser: async ({ username, email, password, confirmPassword, fullName, phoneNumber }) => {
+  registerUser: async ({
+    username,
+    email,
+    password,
+    confirmPassword,
+    fullName,
+    phoneNumber,
+  }) => {
     if (!username || !email || !password || !confirmPassword || !fullName || !phoneNumber) {
       toast.error("Please fill in all fields");
       return { success: false };
@@ -26,33 +38,43 @@ export const useRegisterStore = create((set) => ({
     set({ loading: true });
     const auth = getAuth(app);
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: username });
-      const idToken = await userCredential.user.getIdToken();
+   try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(userCredential.user, { displayName: username });
 
-      const response = await axios.post("/api/users/auth/firebase/register", {
-        idToken,
-        username,
-        fullName,
-        phoneNumber,
-      });
+    const idToken = await userCredential.user.getIdToken();
 
-      set({ loading: false });
+    const response = await axios.post("/api/users/auth/firebase/register", {
+      idToken,
+      username,
+      fullName,
+      phoneNumber,
+    });
 
-      if (!response.data.success) {
-        toast.error(response.data.message || "Registration failed");
-        return { success: false };
-      }
+    set({ loading: false });
 
-      toast.success("Registration successful");
-      return { success: true };
-    } catch (error) {
-      console.error("Firebase registration error:", error);
-      toast.error(error.message || "Something went wrong");
-      set({ loading: false });
+    if (!response.data.success) {
+      toast.error(response.data.message || "Registration failed");
       return { success: false };
     }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Firebase registration error:", error);
+
+    // 🔥 Custom error messages
+    if (error.code === "auth/email-already-in-use") {
+      toast.error("This email is already registered.");
+    } else if (error.code === "auth/invalid-email") {
+      toast.error("The email address is invalid.");
+    } else if (error.code === "auth/weak-password") {
+      toast.error("Password is too weak. Please choose a stronger one.");
+    } else {
+      toast.error("Something went wrong. Please try again.");
+    }
+
+    set({ loading: false });
+    return { success: false };
+  }
   },
 }));
-
