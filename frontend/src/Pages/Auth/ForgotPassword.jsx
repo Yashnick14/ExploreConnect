@@ -1,6 +1,6 @@
 // src/Pages/Auth/ForgotPassword.jsx
 
-import React, { useState } from "react"
+import React, { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../Firebase";
 import { toast } from "react-hot-toast";
