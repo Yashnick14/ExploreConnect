@@ -1,4 +1,4 @@
-import express from "express"
+import express from "express";
 import { firebaseRegister,firebaseLogin, forgotPassword } from "../controllers/AuthController.js";
 
 const router = express.Router();
