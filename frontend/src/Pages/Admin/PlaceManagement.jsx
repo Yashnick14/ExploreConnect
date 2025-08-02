@@ -3,14 +3,17 @@ import { usePlaceStore } from "../../store/Place/place";
 import Sidebar from "../../Components/Sidebar";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { IoCloudUploadOutline } from "react-icons/io5";
+import { FiMenu } from "react-icons/fi";
+import PlaceModal from "../../Components/PlaceModal";
 
 const PlaceManagement = () => {
   const { places, fetchPlaces, createPlace, updatePlace, deletePlace } = usePlaceStore();
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingPlace, setEditingPlace] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -52,7 +55,9 @@ const PlaceManagement = () => {
       description: place.description,
       location: place.location,
       district: place.district,
-      images: place.images.map(img => `${import.meta.env.VITE_API_BASE_URL}/uploads/${img}`),
+      images: place.images.map(
+        (img) => `${import.meta.env.VITE_API_BASE_URL}/uploads/${img}`
+      ),
       category: place.category,
       contactNumber: place.contactNumber,
       workingHours: place.workingHours,
@@ -64,43 +69,30 @@ const PlaceManagement = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     if (!selectedPlaceId) return;
-    if (window.confirm("Are you sure you want to delete this place?")) {
-      const { success, message } = await deletePlace(selectedPlaceId);
-      if (success) {
-        toast.success("Place deleted successfully");
-        fetchPlaces();
-        setSelectedPlaceId(null);
-      } else {
-        toast.error(message || "Failed to delete place.");
-      }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedPlaceId) return;
+    const { success, message } = await deletePlace(selectedPlaceId);
+    if (success) {
+      toast.success("Place deleted successfully");
+      fetchPlaces();
+      setSelectedPlaceId(null);
+    } else {
+      toast.error(message || "Failed to delete place.");
     }
+    setShowDeleteModal(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
 
-    // Append form fields
-    for (const key in form) {
-      if (key !== "images") {
-        formData.append(key, form[key]);
-      }
-    }
-
-    // Handle image array (mix of URLs & new files)
-    const imageFiles = form.images.filter(img => img instanceof File);
-    imageFiles.forEach((file) => {
-      formData.append("images", file);
-    });
-
-    let response;
-    if (isEditMode) {
-      response = await updatePlace(editingPlace, formData, true); // true = isFormData
-    } else {
-      response = await createPlace(form);
-    }
+    const response = isEditMode
+      ? await updatePlace(editingPlace, form)
+      : await createPlace(form);
 
     if (response.success) {
       toast.success(isEditMode ? "Place updated successfully" : "Place added successfully");
@@ -119,30 +111,76 @@ const PlaceManagement = () => {
       });
       setIsEditMode(false);
       setEditingPlace(null);
+      setSelectedPlaceId(null);
     } else {
       toast.error(response.message || "Action failed");
     }
   };
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <ToastContainer />
-      <div className="ml-64 w-full p-6 bg-gray-100 min-h-screen">
+    <div className="flex min-h-screen bg-gray-100 overflow-x-hidden relative">
+      {/* Mobile Toggle Button */}
+      <div className="fixed top-4 left-4 z-50 md:hidden">
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="text-black bg-white shadow rounded px-3 py-2"
+        >
+          <FiMenu />
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <div
+        className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${
+          isSidebarOpen ? "block" : "hidden"
+        }`}
+      >
+        <Sidebar />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64 p-4 w-full">
+        <ToastContainer />
+
         {/* Top Bar */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Manage Places</h2>
-          <div className="space-x-2">
-            <button className="bg-black text-white px-4 py-2 rounded">All</button>
-            <button onClick={() => setShowModal(true)} className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded">ADD</button>
-            <button onClick={handleEdit} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-black hover:bg-gray-800'}`}>EDIT</button>
-            <button onClick={handleDelete} disabled={!selectedPlaceId} className={`px-4 py-2 rounded text-white ${!selectedPlaceId ? 'bg-gray-400' : 'bg-black hover:bg-gray-800'}`}>DELETE</button>
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-4 sm:flex-nowrap">
+          <h2 className="text-2xl font-bold w-full text-center md:text-left md:w-auto">
+            Manage Places
+          </h2>
+          <div className="space-y-2 sm:space-y-0 sm:space-x-2 flex flex-col sm:flex-row w-full sm:w-auto">
+            <button className="bg-black text-white px-4 py-2 rounded w-full sm:w-auto">
+              All
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded w-full sm:w-auto"
+            >
+              ADD
+            </button>
+            <button
+              onClick={handleEdit}
+              disabled={!selectedPlaceId}
+              className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
+                !selectedPlaceId ? "bg-gray-400" : "bg-black hover:bg-gray-800"
+              }`}
+            >
+              EDIT
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              disabled={!selectedPlaceId}
+              className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
+                !selectedPlaceId ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"
+              }`}
+            >
+              DELETE
+            </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto rounded shadow bg-white mt-6">
-          <table className="min-w-full border-separate border-spacing-y-3">
+        <div className="mt-6 bg-white shadow rounded overflow-x-auto">
+          <table className="min-w-[800px] w-full border-separate border-spacing-y-3">
             <thead className="bg-[#D5F5E3] text-gray-700 text-sm">
               <tr>
                 <th className="px-4 py-3 text-left">Select</th>
@@ -156,15 +194,26 @@ const PlaceManagement = () => {
             </thead>
             <tbody>
               {places.length === 0 ? (
-                <tr><td colSpan="7" className="text-center py-6 text-gray-500">No places available.</td></tr>
+                <tr>
+                  <td colSpan="7" className="text-center py-6 text-gray-500">
+                    No places available.
+                  </td>
+                </tr>
               ) : (
                 places.map((place, index) => (
-                  <tr key={place._id} className="bg-white shadow-sm hover:shadow-md">
+                  <tr
+                    key={place._id}
+                    className="bg-white shadow-sm hover:shadow-md"
+                  >
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selectedPlaceId === place._id}
-                        onChange={() => setSelectedPlaceId(place._id)}
+                        onChange={() =>
+                          setSelectedPlaceId(
+                            selectedPlaceId === place._id ? null : place._id
+                          )
+                        }
                         className="h-4 w-4 text-blue-600"
                       />
                     </td>
@@ -173,7 +222,13 @@ const PlaceManagement = () => {
                     <td className="px-4 py-3">{place.district}</td>
                     <td className="px-4 py-3">{place.category}</td>
                     <td className="px-4 py-3">{place.workingHours}</td>
-                    <td className="px-4 py-3">{place.petsAllowed ? <span className="text-green-600">Yes</span> : <span className="text-red-600">No</span>}</td>
+                    <td className="px-4 py-3">
+                      {place.petsAllowed ? (
+                        <span className="text-green-600">Yes</span>
+                      ) : (
+                        <span className="text-red-600">No</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -181,65 +236,58 @@ const PlaceManagement = () => {
           </table>
         </div>
 
-        {/* Modal */}
+        {/* Modals */}
         {showModal && (
+          <PlaceModal
+            isEditMode={isEditMode}
+            form={form}
+            handleChange={handleChange}
+            handleImageChange={handleImageChange}
+            handleSubmit={handleSubmit}
+            onCancel={() => {
+              setShowModal(false);
+              setIsEditMode(false);
+              setEditingPlace(null);
+            }}
+          />
+        )}
+
+        {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-6">
-              <h3 className="text-xl font-bold text-center mb-4">{isEditMode ? "Edit Place" : "Add New Place"}</h3>
-              <form onSubmit={handleSubmit}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Image Upload Box */}
-                  <div className="md:w-1/4 grid grid-cols-2 gap-2">
-                    {[0, 1, 2, 3].map((index) => (
-                      <label
-                        key={index}
-                        htmlFor={`imageUpload${index}`}
-                        className="border-2 border-dashed bg-gray-50 rounded-md flex flex-col items-center justify-center text-center p-2 h-32 cursor-pointer"
-                      >
-                        {form.images[index] ? (
-                          <img
-                            src={typeof form.images[index] === "string" ? form.images[index] : URL.createObjectURL(form.images[index])}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover rounded"
-                          />
-                        ) : (
-                          <>
-                            <IoCloudUploadOutline className="text-2xl text-gray-400" />
-                            <p className="text-[10px]">{index === 0 ? "Required" : "Optional"}</p>
-                          </>
-                        )}
-                        <input
-                          id={`imageUpload${index}`}
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageChange(index, e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
-                    ))}
-                  </div>
-
-                  {/* Form Fields */}
-                  <div className="md:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="Place Name" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <input type="text" name="workingHours" value={form.workingHours} onChange={handleChange} placeholder="Working Hours" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <input type="text" name="location" value={form.location} onChange={handleChange} placeholder="Location" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" rows="2" className="bg-gray-100 px-3 py-1.5 rounded resize-none" required />
-                    <input type="text" name="district" value={form.district} onChange={handleChange} placeholder="District" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <input type="text" name="contactNumber" value={form.contactNumber} onChange={handleChange} placeholder="Contact Number" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <input type="text" name="category" value={form.category} onChange={handleChange} placeholder="Category" className="bg-gray-100 px-3 py-1.5 rounded" required />
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" name="petsAllowed" checked={form.petsAllowed} onChange={handleChange} />
-                      <span>Pets Allowed</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex justify-center gap-4 mt-6">
-                  <button type="submit" className="bg-black text-white px-6 py-2 rounded">{isEditMode ? "Update" : "Add"}</button>
-                  <button type="button" onClick={() => { setShowModal(false); setIsEditMode(false); setEditingPlace(null); }} className="border px-6 py-2 rounded">Cancel</button>
-                </div>
-              </form>
+            <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
+              <div className="flex items-center justify-center p-4 bg-red-100 rounded-full">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M2.875 5.75h1.917m0 0h15.333m-15.333 0v13.417a1.917 1.917 0 0 0 1.916 1.916h9.584a1.917 1.917 0 0 0 1.916-1.916V5.75m-10.541 0V3.833a1.917 1.917 0 0 1 1.916-1.916h3.834a1.917 1.917 0 0 1 1.916 1.916V5.75m-5.75 4.792v5.75m3.834-5.75v5.75"
+                    stroke="#DC2626"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-gray-900 font-semibold mt-4 text-xl">Are you sure?</h2>
+              <p className="text-sm text-gray-600 mt-2 text-center">
+                Do you really want to continue?
+                <br />
+                This action cannot be undone.
+              </p>
+              <div className="flex items-center justify-center gap-4 mt-5 w-full">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="w-full md:w-36 h-10 rounded-md border border-gray-300 bg-white text-gray-600 font-medium text-sm hover:bg-gray-100 active:scale-95 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="w-full md:w-36 h-10 rounded-md text-white bg-red-600 font-medium text-sm hover:bg-red-700 active:scale-95 transition"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
         )}

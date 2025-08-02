@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../Firebase";
 import { toast } from "react-hot-toast";
-import bgImage from "../../assets/login.jpg";
+import bgImage from "../../assets/login3.jpg";
 import { Link } from "react-router-dom";
 
 const ForgotPassword = () => {

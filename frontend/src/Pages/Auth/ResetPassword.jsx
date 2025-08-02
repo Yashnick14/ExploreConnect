@@ -5,7 +5,7 @@ import { confirmPasswordReset } from "firebase/auth";
 import { auth } from "../../Firebase";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import bgImage from "../../assets/login.jpg";
+import bgImage from "../../assets/login3.jpg";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();

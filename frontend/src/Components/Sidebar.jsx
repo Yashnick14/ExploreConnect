@@ -1,39 +1,62 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   HiOutlineHome,
   HiOutlineUserGroup,
-  HiOutlineCog,
   HiOutlineLocationMarker,
+  HiOutlineCog,
 } from "react-icons/hi";
 
 const Sidebar = () => {
+  const baseLinkClasses =
+    "w-full text-left p-2 rounded flex items-center gap-2 transition-colors duration-200";
+  const activeLinkClasses = "bg-emerald-700/50";
+
   return (
-    <aside className="w-64 h-screen fixed top-0 left-0 p-5 bg-gradient-to-b from-black via-[#032915] to-[#032915] text-white shadow-lg">
-      <h2 className="text-2xl font-bold mb-8 text-emerald-300">Admin</h2>
-      <nav className="space-y-4 text-sm">
-        <Link
-          to="/admin-dashboard"
-          className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition"
-        >
-          <HiOutlineHome className="text-emerald-300" /> Dashboard
-        </Link>
-        <Link
-          to="/place-management"
-          className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition"
-        >
-          <HiOutlineLocationMarker className="text-emerald-300" /> Places
-        </Link>
-        <Link
-          to="/user-management"
-          className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition"
-        >
-          <HiOutlineUserGroup className="text-emerald-300" /> Users
-        </Link>
-        <button className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition">
-          <HiOutlineCog className="text-emerald-300" /> Settings
-        </button>
-      </nav>
+    <aside className="w-48 sm:w-56 md:w-64 h-screen fixed top-0 left-0 p-3 sm:p-4 md:p-5 bg-gradient-to-b from-black via-[#032915] to-[#032915] text-white shadow-lg z-50">
+      <div className="pt-12 md:pt-0">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 md:mb-8 text-white">
+          EXPLORECONNECT
+        </h2>
+
+        <nav className="space-y-2 sm:space-y-3 md:space-y-4 text-xs sm:text-sm">
+          <NavLink
+            to="/admin-dashboard"
+            className={({ isActive }) =>
+              `${baseLinkClasses} ${isActive ? activeLinkClasses : "hover:bg-emerald-700/50"}`
+            }
+          >
+            <HiOutlineHome className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/place-management"
+            className={({ isActive }) =>
+              `${baseLinkClasses} ${isActive ? activeLinkClasses : "hover:bg-emerald-700/50"}`
+            }
+          >
+            <HiOutlineLocationMarker className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Places</span>
+          </NavLink>
+
+          <NavLink
+            to="/user-management"
+            className={({ isActive }) =>
+              `${baseLinkClasses} ${isActive ? activeLinkClasses : "hover:bg-emerald-700/50"}`
+            }
+          >
+            <HiOutlineUserGroup className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Users</span>
+          </NavLink>
+
+          {/* Keep the Settings button as is */}
+          <button className="w-full text-left hover:bg-emerald-700/50 p-2 rounded flex items-center gap-2 transition-colors duration-200">
+            <HiOutlineCog className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Settings</span>
+          </button>
+        </nav>
+      </div>
     </aside>
   );
 };

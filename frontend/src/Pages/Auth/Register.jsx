@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { useRegisterStore } from "../../store/Auth/register"; // your zustand store path
-import bgImage from "../../assets/login.jpg";
+import bgImage from "../../assets/login3.jpg";
 import { toast } from "react-hot-toast";
 
 
