@@ -18,3 +18,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_EXPLORECONNECT_F5A02 }}
           channelId: live
           projectId: exploreconnect-f5a02
+          entryPoint: frontend
