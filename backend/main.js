@@ -9,7 +9,6 @@ import placeRoutes from './routes/PlaceRoute.js';
 import authRoutes from './routes/AuthRoute.js';
 import adminRoutes from './routes/AdminRoute.js';
 
-
 dotenv.config();
 
 const app = express();
@@ -19,11 +18,26 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ✅ Updated CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',        // Local frontend
+  'https://exploreconnect-f5a02.web.app' // Firebase deployed frontend
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 // Middleware
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json()); // For JSON routes only
 app.use(express.urlencoded({ extended: true }));
-
 
 // Serve uploaded image files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
@@ -32,8 +46,6 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use('/api/places', placeRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/admin', adminRoutes);
-
-
 
 // Frontend serve for production
 if (process.env.NODE_ENV === "production") {
