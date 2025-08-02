@@ -15,7 +15,6 @@ export const getUsers = async (req, res) => {
 export const toggleUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Toggling status for ID:", id);
     const user = await User.findById(id);
 
     if (!user) {
@@ -43,8 +42,6 @@ export const deleteUser = async (req, res) => {
 
     const firebaseUid = user.uid;
 
-    console.log("🟡 Deleting user:", user.fullName, "| Firebase UID:", firebaseUid);
-
     // Delete from MongoDB
     await User.findByIdAndDelete(id);
 
@@ -52,7 +49,6 @@ export const deleteUser = async (req, res) => {
     if (firebaseUid) {
       try {
         await admin.auth().deleteUser(firebaseUid);
-        console.log("✅ Firebase user deleted:", firebaseUid);
       } catch (firebaseError) {
         console.error("❌ Error deleting from Firebase:", firebaseError.message);
         // Optional: Reinsert MongoDB user if Firebase deletion fails

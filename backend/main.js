@@ -21,14 +21,17 @@ const __dirname = path.dirname(__filename);
 // ✅ Updated CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',        // Local frontend
+  'http://localhost:5000',
   'https://exploreconnect-f5a02.web.app' // Firebase deployed frontend
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like Postman or server-to-server)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`CORS blocked for origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },

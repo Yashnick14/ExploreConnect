@@ -22,8 +22,6 @@ export const useLoginStore = create((set) => ({
 
       const user = res.data.user;
 
-      console.log("✅ Backend response:", user);
-
       set({ loading: false });
       toast.success("Logged in successfully");
 

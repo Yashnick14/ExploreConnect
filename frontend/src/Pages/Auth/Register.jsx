@@ -49,7 +49,7 @@ const Register = () => {
       );
       setTimeout(() => {
         navigate("/login");
-      }, 3000); // Give user 3 seconds to read message
+      }, 2000); // Give user 3 seconds to read message
     }
   };
 

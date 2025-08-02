@@ -84,7 +84,7 @@ export const firebaseLogin = async (req, res) => {
       await user.save();
     }
 
-    // ❌ Block login if user is inactive
+    // Block login if user is inactive
     if (user.status === "inactive") {
       return res.status(403).json({
         success: false,
@@ -136,10 +136,6 @@ export const forgotPassword = async (req, res) => {
       url: "https://exploreconnect-f5a02.web.app/reset-password",
       handleCodeInApp: true,
     });
-
-
-    // For now, just log it or return it — or ideally, send via your own email system
-    console.log("Reset Link:", resetLink);
 
     res.status(200).json({ success: true, message: "Reset email sent", link: resetLink });
   } catch (err) {

@@ -69,6 +69,8 @@ export const useRegisterStore = create((set) => ({
       toast.error("The email address is invalid.");
     } else if (error.code === "auth/weak-password") {
       toast.error("Password is too weak. Please choose a stronger one.");
+    } else if (error.code === "auth/password-does-not-meet-requirements") {
+      toast.error("Password must contain an uppercase letter, a number, and a special character.");
     } else {
       toast.error("Something went wrong. Please try again.");
     }

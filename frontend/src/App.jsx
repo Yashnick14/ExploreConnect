@@ -19,6 +19,7 @@ import UserManagement from "./Pages/Admin/UserManagement";
 
 
 function App() {
+
   const location = useLocation();
   const adminRoutes = ["/admin-dashboard", "/user-management", "/place-management", "/register", "/login", "/reset-password", "/forgot-password"];
   const isAdminRoute = adminRoutes.includes(location.pathname);

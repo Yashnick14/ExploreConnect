@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import bgImage from "../../assets/login3.jpg";
 
 const ResetPassword = () => {
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 

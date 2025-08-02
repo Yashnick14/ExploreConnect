@@ -5,8 +5,6 @@ import { MdOutlinePets } from "react-icons/md";
 
 const PlaceCard = ({ place }) => {
 
-  console.log("🔗", import.meta.env.VITE_API_BASE_URL);
-
   return (
     <div className="relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 hover:-translate-y-1">
       
