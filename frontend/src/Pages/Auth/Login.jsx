@@ -91,9 +91,6 @@ const Login = () => {
       const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
       const userEmail = user.email?.trim().toLowerCase();
 
-      console.log("User Email:", userEmail);
-      console.log("Admin Email (from env):", adminEmail);
-
       // Uncomment this if email verification is required
       // if (!user.emailVerified && userEmail !== adminEmail) {
       //   toast.error("Please verify your email before logging in.");
@@ -128,11 +125,8 @@ const Login = () => {
       const userCredential = await signInAnonymously(auth);
       const user = userCredential.user;
 
-      // Anonymous users do not have tokens that backend can verify, 
-      // so you might want to skip backend login or send some guest identifier if your backend supports it
-      // For now, we’ll just navigate as guest with no backend auth:
       toast.success("Logged in as Guest");
-      navigate("/"); // Or wherever guests should go
+      navigate("/");
     } catch (err) {
       toast.error("Guest login failed: " + err.message);
     } finally {

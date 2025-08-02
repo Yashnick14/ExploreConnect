@@ -15,7 +15,7 @@ import Membership from "./Pages/User/Membership";
 import Profile from "./Pages/User/Profile";
 import About from "./Pages/User/About";
 import UserManagement from "./Pages/Admin/UserManagement";
-import VerifySuccess from "./Pages/Auth/VerifyPage";
+
 
 
 function App() {
@@ -43,7 +43,7 @@ function App() {
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
-          <Route path="/verify-success" element={<VerifySuccess />} />
+
 
         </Routes>
       </main>

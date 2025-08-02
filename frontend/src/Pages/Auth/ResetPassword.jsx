@@ -1,5 +1,3 @@
-// src/Pages/Auth/ResetPassword.jsx
-
 import React, { useState, useEffect } from "react";
 import { confirmPasswordReset } from "firebase/auth";
 import { auth } from "../../Firebase";
@@ -18,7 +16,7 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ Redirect if URL is invalid
+  //Redirect if URL is invalid
   useEffect(() => {
     if (mode !== "resetPassword" || !oobCode) {
       toast.error("Invalid or expired reset link");

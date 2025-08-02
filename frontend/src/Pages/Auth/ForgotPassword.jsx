@@ -1,5 +1,3 @@
-// src/Pages/Auth/ForgotPassword.jsx
-
 import React, { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../Firebase";
@@ -38,7 +36,7 @@ const ForgotPassword = () => {
       className="h-screen w-full bg-cover bg-center flex items-center justify-center font-sans"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
-      <div className="bg-white/90 p-10 rounded-2xl max-w-md w-full text-center shadow-xl">
+      <div className="bg-white/90 p-6 sm:p-10 rounded-2xl max-w-md w-full px-4 sm:px-10 text-center shadow-xl">
         <h2 className="mb-6 text-2xl font-bold text-gray-900">RESET PASSWORD</h2>
 
         <form onSubmit={handleSubmit}>
