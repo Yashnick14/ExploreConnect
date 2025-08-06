@@ -115,9 +115,14 @@ const Login = () => {
 
       await authenticateUser(idToken, result.user);
     } catch (err) {
-      toast.error("Google login failed: " + err.message);
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        toast.error("Google login was cancelled.");
+      } else {
+        toast.error("Google login failed: " + err.message);
+      }
     }
   };
+
 
   const handleGuestLogin = async () => {
     setLoading(true);

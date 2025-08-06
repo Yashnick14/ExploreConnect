@@ -38,21 +38,42 @@ const ResetPassword = () => {
       return;
     }
 
+    // ✅ FRONTEND VALIDATION to avoid Firebase error
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error("Password must include an uppercase letter.");
+      return;
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      toast.error("Password must include a special character.");
+      return;
+    }
+
     setLoading(true);
     try {
       await confirmPasswordReset(auth, oobCode, password);
-      toast.success(" Password changed successfully!");
-      navigate("/login", { replace: true }); // ✅ Removes oobCode from URL
+      toast.success("Password changed successfully!");
+      navigate("/login", { replace: true });
     } catch (err) {
       console.error("Reset error:", err);
+
       if (err.code === "auth/expired-action-code") {
         toast.error("This reset link has already been used or expired.");
       } else if (err.code === "auth/invalid-action-code") {
         toast.error("Invalid reset link.");
+      } else if (err.code === "auth/password-does-not-meet-requirements") {
+        toast.error(
+          "Password must be at least 6 characters, contain an uppercase letter, and a special character."
+        );
       } else {
-        toast.error("❌ " + err.message);
+        // 🔒 FINAL fallback only
+        toast.error("Something went wrong. Please try again.");
       }
     }
+
     setLoading(false);
   };
 

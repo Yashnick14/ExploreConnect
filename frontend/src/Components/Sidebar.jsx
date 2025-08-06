@@ -6,6 +6,8 @@ import {
   HiOutlineLocationMarker,
   HiOutlineCog,
 } from "react-icons/hi";
+import logo from "../assets/logoadmin.png"; // Adjust the path as necessary
+
 
 const Sidebar = () => {
   const location = useLocation();
@@ -24,9 +26,11 @@ const Sidebar = () => {
             : "pt-12 md:pt-0" // Default padding
         }`}
       >
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 md:mb-8 text-white">
-          EXPLORECONNECT
-        </h2>
+        <img
+          src={logo}
+          alt="ExploreConnect Logo"
+          className="w-32 sm:w-36 md:w-40 mb-4 sm:mb-6 md:mb-8 object-contain"
+        />
 
         <nav className="space-y-2 sm:space-y-3 md:space-y-4 text-xs sm:text-sm">
           <NavLink

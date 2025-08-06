@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaRegUser } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { usePlaceStore } from "@/store/Place/place";
+import logo from "../assets/logo.png"; 
 
 const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile }) => {
   if (!searchQuery) return null;
@@ -12,20 +13,16 @@ const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile
         <ul className="divide-y divide-gray-200">
           {searchResults.map((place) => (
             <li key={place._id}>
-              <Link
-                to={`/places/${place._id}`}
-                className="flex items-center gap-3 py-2 px-4 hover:bg-gray-100"
-                onClick={handleResultClick}
-              >
-                <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
-                  <img
-                    src={`http://localhost:5000/uploads/${place.images?.[0]}`}
-                    alt={place.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="text-sm text-gray-700 font-medium">{place.name}</span>
-              </Link>
+            <div className="flex items-center gap-3 py-2 px-4 cursor-default">
+              <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
+                <img
+                  src={`http://localhost:5000/uploads/${place.images?.[0]}`}
+                  alt={place.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="text-sm text-gray-700 font-medium">{place.name}</span>
+            </div>
             </li>
           ))}
         </ul>
@@ -74,19 +71,25 @@ const Navbar = () => {
     <nav className="absolute top-0 left-0 w-full z-[1000] bg-white/60 backdrop-blur-md text-black">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left - Logo */}
-        <div className=" text-xl font-bold text-gray-900">
-          <Link to="/">EXPLORECONNECT</Link>
+        <div className="w-32 h-auto">
+          <Link to="/">
+            <img
+              src={logo}
+              alt="ExploreConnect Logo"
+              className="w-full h-auto object-contain"
+            />
+          </Link>
         </div>
 
         {/* Center - Nav Links */}
         <div className="nav-headings hidden lg:flex gap-8">
-          <Link to="/membership" className="text-gray-800 font-medium hover:text-emerald-900">
+          <Link to="/membership" className="text-gray-800 font-medium hover:text-gray-700">
             Membership
           </Link>
-          <Link to="/places" className="text-gray-800 font-medium hover:text-emerald-900">
+          <Link to="/places" className="text-gray-800 font-medium hover:text-gray-700">
             Places
           </Link>
-          <Link to="/about" className="text-gray-800 font-medium hover:text-emerald-900">
+          <Link to="/about" className="text-gray-800 font-medium hover:text-gray-700">
             About
           </Link>
         </div>
@@ -118,8 +121,8 @@ const Navbar = () => {
           <div>
             
           </div>
-          <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-emerald-900">Login</Link>
-          <Link to="/profile" className="nav-headings text-gray-800 font-medium hover:text-emerald-900">
+          <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-gray-700">Login</Link>
+          <Link to="/profile" className="nav-headings text-gray-800 font-medium hover:text-gray-700">
             <FaRegUser />
           </Link>
         </div>

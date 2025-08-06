@@ -41,7 +41,6 @@ export const firebaseRegister = async (req, res) => {
   }
 };
 
-
 // LOGIN
 export const firebaseLogin = async (req, res) => {
   const { idToken } = req.body;
@@ -73,7 +72,7 @@ export const firebaseLogin = async (req, res) => {
         username: email.split("@")[0],
         phoneNumber: "",
         role: email === process.env.ADMIN_EMAIL ? "admin" : "user",
-        status: "Active", // Default new users to Active
+        status: "active", // Default new users to Active
       });
       await user.save();
     }
@@ -113,7 +112,6 @@ export const firebaseLogin = async (req, res) => {
     });
   }
 };
-
 
 // FORGOT PASSWORD 
 export const forgotPassword = async (req, res) => {

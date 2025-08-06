@@ -4,7 +4,7 @@ import bgImage from "../../assets/mount11.jpg"; // adjust path as needed
 const plans = [
   {
     title: "WEEKLY",
-    price: "$4.99",
+    price: "$3.99",
     features: [
       "Get access to exclusive places",
       "Arrange events on request",
@@ -54,8 +54,8 @@ const Membership = () => {
 
       {/* Content */}
       <div className="relative z-10 max-w-6xl mx-auto px-4"><br></br>
-        <h1 className="text-center text-4xl font-semibold leading-tight sm:text-5xl text-emerald-900">
-          Membership
+        <h1 className="text-center text-4xl font-semibold leading-tight sm:text-5xl text-gray-700">
+          Join Us
         </h1>
         <p className="text-center text-gray-700 md:text-lg mt-2">
           Choose a plan that suits your needs
@@ -65,11 +65,12 @@ const Membership = () => {
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`relative flex flex-col bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 transition-transform duration-300 hover:scale-105 ${
+              className={`relative flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-200 transition-all duration-300 hover:scale-105 hover:shadow-2xl ${
                 index === 1
-                  ? "scale-105 shadow-lg z-10 border-green-500 h-[520px] md:h-[540px]"
-                  : "scale-100 h-[460px] md:h-[480px]"
+                  ? "shadow-xl z-10 border-green-500 h-[520px] md:h-[540px]"
+                  : "shadow-md h-[460px] md:h-[480px]"
               }`}
+
             >
               {/* Top bar */}
               <div className="h-2 bg-gradient-to-r from-green-500 via-green-400 to-green-600 w-full"></div>

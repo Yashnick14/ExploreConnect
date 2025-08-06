@@ -110,7 +110,7 @@ const Places = () => {
               Category
             </label>
             <select
-              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
+              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-colors text-sm"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
@@ -129,7 +129,7 @@ const Places = () => {
               District
             </label>
             <select
-              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm"
+              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-colors text-sm"
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
             >
