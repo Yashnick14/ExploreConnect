@@ -5,6 +5,8 @@
 
 
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
 
 body {
   font-family: "Poppins", sans-serif;

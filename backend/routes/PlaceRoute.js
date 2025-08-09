@@ -1,5 +1,5 @@
 import express from 'express';
-import { createPlace, deletePlace, getLatestPlaces, getPlaces, getUniqueFilters, searchPlaces, updatePlace } from '../controllers/PlaceController.js';
+import { createPlace, deletePlace, getLatestPlaces, getPlaceById, getPlaces, getUniqueFilters, searchPlaces, updatePlace } from '../controllers/PlaceController.js';
 import { upload } from "../middleware/upload.js";
 
 
@@ -18,6 +18,8 @@ router.delete("/:id", deletePlace);
 router.get("/filters", getUniqueFilters);
 
 router.get("/search", searchPlaces);
+
+router.get('/:id', getPlaceById);
 
 
 

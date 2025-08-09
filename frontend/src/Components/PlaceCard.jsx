@@ -1,13 +1,15 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { HiStar } from "react-icons/hi2";
 import { HiOutlineLocationMarker } from "react-icons/hi";
 import { MdOutlinePets } from "react-icons/md";
 
 const PlaceCard = ({ place }) => {
-
   return (
-    <div className="relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 hover:-translate-y-1">
-      
+    <Link
+      to={`/places/${place._id}`}
+      className="block relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 hover:-translate-y-1"
+    >
       {/* Pets Badge */}
       {place.petsAllowed && (
         <div className="absolute top-3 right-3 z-10">
@@ -26,9 +28,6 @@ const PlaceCard = ({ place }) => {
         alt={place.name}
         className="w-full h-56 object-cover transition duration-300"
       />
-
-
-
 
       {/* Content */}
       <div className="p-5 text-center">
@@ -54,7 +53,7 @@ const PlaceCard = ({ place }) => {
           <span>4.6 (120 reviews)</span>
         </p>
       </div>
-    </div>
+    </Link>
   );
 };
 

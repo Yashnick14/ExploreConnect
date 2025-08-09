@@ -10,34 +10,23 @@ export const usePlaceStore = create((set) => ({
 
   createPlace: async (newPlace) => {
     try {
-      const formData = new FormData();
-      formData.append("name", newPlace.name);
-      formData.append("description", newPlace.description);
-      formData.append("location", newPlace.location);
-      formData.append("district", newPlace.district);
-      formData.append("category", newPlace.category);
-      formData.append("contactNumber", newPlace.contactNumber);
-      formData.append("workingHours", newPlace.workingHours);
-      formData.append("petsAllowed", newPlace.petsAllowed);
+      const fd = new FormData();
+      // append all fields:
+      ["name","description","location","district",
+       "category","contactNumber","workingHours","petsAllowed",
+       "lat","lng"
+      ].forEach(key => fd.append(key, newPlace[key]));
+      // images:
+      newPlace.images.forEach(f => f && fd.append("images", f));
 
-      // Append all 4 images (only if they exist)
-      newPlace.images.forEach((file) => {
-        if (file) formData.append("images", file);
-      });
-
-      const res = await fetch("/api/places", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/places", { method:"POST", body:fd });
       const data = await res.json();
-      if (!data.success) return { success: false, message: data.message };
-
-      set((state) => ({ places: [...state.places, data.data] }));
-      return { success: true, message: "Place created successfully" };
+      if (!data.success) throw new Error(data.message);
+      set((s) => ({ places: [...s.places, data.data] }));
+      return { success:true };
     } catch (err) {
-      console.error("❌ createPlace error:", err.message);
-      return { success: false, message: "Server error" };
+      console.error(err);
+      return { success:false, message:err.message };
     }
   },
 
@@ -45,6 +34,22 @@ export const usePlaceStore = create((set) => ({
     const res = await fetch("/api/places");
     const data = await res.json();
     set({ places: data.data });
+  },
+
+  getPlaceById: async (id) => {
+  try {
+    const res = await fetch(`/api/places/${id}`);
+    const data = await res.json();
+
+    if (data.success) {
+      return { success: true, data: data.data };
+    } else {
+      return { success: false, message: data.message };
+    }
+  } catch (err) {
+    console.error("❌ getPlaceById error:", err.message);
+    return { success: false, message: "Server error" };
+  }
   },
 
   fetchLatestPlaces: async () => {
@@ -69,41 +74,27 @@ export const usePlaceStore = create((set) => ({
     return { success: true, message: data.message };
   },
 
-  updatePlace: async (pid, updateData) => {
+  updatePlace: async (id, upd) => {
     try {
-      const formData = new FormData();
+      const fd = new FormData();
+      ["name","description","location","district",
+       "category","contactNumber","workingHours","petsAllowed",
+       "lat","lng"
+      ].forEach(key => fd.append(key, upd[key]));
+      upd.images.forEach(f => f && typeof f!=="string" && fd.append("images", f));
+      if (upd.removedIndexes)
+        fd.append("removedIndexes", JSON.stringify(upd.removedIndexes));
 
-      for (const key in updateData) {
-        if (key === "images") {
-          updateData.images.forEach(file => {
-            if (file && typeof file !== "string") {
-              formData.append("images", file);
-            }
-          });
-        } else {
-          formData.append(key, updateData[key]);
-        }
-      }
-
-      const res = await fetch(`/api/places/${pid}`, {
-        method: "PUT",
-        body: formData,
-      });
-
+      const res = await fetch(`/api/places/${id}`, { method:"PUT", body:fd });
       const data = await res.json();
-
-      if (!data.success) return { success: false, message: data.message };
-
-      set((state) => ({
-        places: state.places.map((place) =>
-          place._id === pid ? data.data : place
-        ),
+      if (!data.success) throw new Error(data.message);
+      set((s) => ({
+        places: s.places.map(p => p._id===id ? data.data : p)
       }));
-
-      return { success: true, message: data.message };
+      return { success:true };
     } catch (err) {
-      console.error("❌ updatePlace error:", err.message);
-      return { success: false, message: "Server error" };
+      console.error(err);
+      return { success:false, message:err.message };
     }
   },
 

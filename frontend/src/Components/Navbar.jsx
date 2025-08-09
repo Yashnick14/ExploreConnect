@@ -7,22 +7,26 @@ import logo from "../assets/logo.png";
 const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile }) => {
   if (!searchQuery) return null;
 
-  return (
+return (
     <div className={`mt-2 bg-white shadow-lg rounded-lg z-50 ${isMobile ? "" : "absolute top-full left-0 w-full"}`}>
       {searchResults.length > 0 ? (
         <ul className="divide-y divide-gray-200">
           {searchResults.map((place) => (
             <li key={place._id}>
-            <div className="flex items-center gap-3 py-2 px-4 cursor-default">
-              <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
-                <img
-                  src={`http://localhost:5000/uploads/${place.images?.[0]}`}
-                  alt={place.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="text-sm text-gray-700 font-medium">{place.name}</span>
-            </div>
+              <Link
+                to={`/places/${place._id}`}
+                onClick={handleResultClick}
+                className="flex items-center gap-3 py-2 px-4 hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
+                  <img
+                    src={`http://localhost:5000/uploads/${place.images?.[0]}`}
+                    alt={place.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="text-sm text-gray-700 font-medium">{place.name}</span>
+              </Link>
             </li>
           ))}
         </ul>

@@ -15,6 +15,7 @@ import Membership from "./Pages/User/Membership";
 import Profile from "./Pages/User/Profile";
 import About from "./Pages/User/About";
 import UserManagement from "./Pages/Admin/UserManagement";
+import PlacePreview from "./Pages/User/PlacePreview";
 
 
 
@@ -39,6 +40,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/places" element={<Places />} />
+          <Route path="/places/:id" element={<PlacePreview />} />
           <Route path="/place-management" element={<PlaceManagement />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/membership" element={<Membership />} />
