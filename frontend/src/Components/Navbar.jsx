@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaRegUser } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { usePlaceStore } from "@/store/Place/place";
-import logo from "../assets/logo.png"; 
+import { useAuthStore } from "@/store/Auth/auth";
+import logo from "../assets/logo.png";
 
 const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile }) => {
   if (!searchQuery) return null;
 
-return (
+  return (
     <div className={`mt-2 bg-white shadow-lg rounded-lg z-50 ${isMobile ? "" : "absolute top-full left-0 w-full"}`}>
       {searchResults.length > 0 ? (
         <ul className="divide-y divide-gray-200">
@@ -40,29 +41,36 @@ return (
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false); // desktop dropdown
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false); // mobile collapsible
+  const profileRef = useRef(null);
 
-  const {
-    fetchPlaces,
-    searchPlaces,
-    searchResults,
-    setSearchResults,
-  } = usePlaceStore();
+  // Places search
+  const { fetchPlaces, searchPlaces, searchResults, setSearchResults } = usePlaceStore();
+
+  // Auth
+  const { user, loadUserFromStorage, logout } = useAuthStore();
+
+  useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
+  useEffect(() => { loadUserFromStorage(); }, [loadUserFromStorage]);
 
   useEffect(() => {
-    fetchPlaces();
-  }, [fetchPlaces]);
+    const onClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-
-    if (!query.trim()) {
-      setSearchResults([]);
-    } else {
-      searchPlaces(query);
-    }
+    if (!query.trim()) setSearchResults([]);
+    else searchPlaces(query);
   };
 
   const handleResultClick = () => {
@@ -71,36 +79,30 @@ const Navbar = () => {
     setMenuOpen(false);
   };
 
+  const displayName =
+    user?.username ||
+    (user?.email ? user.email.split("@")[0] : null);
+
   return (
     <nav className="absolute top-0 left-0 w-full z-[1000] bg-white/60 backdrop-blur-md text-black">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left - Logo */}
         <div className="w-32 h-auto">
-          <Link to="/">
-            <img
-              src={logo}
-              alt="ExploreConnect Logo"
-              className="w-full h-auto object-contain"
-            />
+          <Link to="/home">
+            <img src={logo} alt="ExploreConnect Logo" className="w-full h-auto object-contain" />
           </Link>
         </div>
 
         {/* Center - Nav Links */}
         <div className="nav-headings hidden lg:flex gap-8">
-          <Link to="/membership" className="text-gray-800 font-medium hover:text-gray-700">
-            Membership
-          </Link>
-          <Link to="/places" className="text-gray-800 font-medium hover:text-gray-700">
-            Places
-          </Link>
-          <Link to="/about" className="text-gray-800 font-medium hover:text-gray-700">
-            About
-          </Link>
+          <Link to="/membership" className="text-gray-800 font-medium hover:text-gray-700">Membership</Link>
+          <Link to="/places" className="text-gray-800 font-medium hover:text-gray-700">Places</Link>
+          <Link to="/about" className="text-gray-800 font-medium hover:text-gray-700">About</Link>
         </div>
 
         {/* Right - Search + Login/Profile */}
         <div className="hidden lg:flex items-center gap-6">
-          {/* Search Container */}
+          {/* Search */}
           <div className="relative w-[260px]">
             <div className="flex items-center border pl-4 gap-2 border-gray-500/30 h-[46px] rounded-full overflow-hidden w-full bg-white">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 30 30" fill="#6B7280">
@@ -122,13 +124,72 @@ const Navbar = () => {
               isMobile={false}
             />
           </div>
-          <div>
-            
-          </div>
-          <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-gray-700">Login</Link>
-          <Link to="/profile" className="nav-headings text-gray-800 font-medium hover:text-gray-700">
-            <FaRegUser />
-          </Link>
+
+          {/* Right side: Login OR Username + dropdown */}
+          {!user ? (
+            <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-gray-700">
+              Login
+            </Link>
+          ) : (
+            <div className="relative" ref={profileRef}>
+              <button
+                type="button"
+                onClick={() => setProfileOpen((o) => !o)}
+                className="nav-headings text-gray-800 font-medium hover:text-gray-700 flex items-center gap-2 max-w-[190px]"
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                title={user.email}
+              >
+                <FaRegUser className="text-lg" />
+                <span className="truncate">{displayName || "Profile"}</span>
+              </button>
+
+              {profileOpen && (
+                <div
+                  role="menu"
+                  aria-label="Profile menu"
+                  className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden z-[1100]"
+                >
+                  <div className="px-4 py-2 text-xs text-gray-500">
+                    Signed in as{" "}
+                    <span className="font-medium text-gray-700 break-all">{user.email}</span>
+                  </div>
+                  <hr />
+                  <Link
+                    to="/favorites"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    role="menuitem"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    Favorites
+                  </Link>
+                  <Link
+                    to="/registrations"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    role="menuitem"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    My Registrations
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    role="menuitem"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    onClick={() => { logout(); setProfileOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    role="menuitem"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -145,9 +206,62 @@ const Navbar = () => {
           <Link to="/membership" className="text-black font-medium hover:text-emerald-950">Membership</Link>
           <Link to="/places" className="text-black font-medium hover:text-emerald-950">Places</Link>
           <Link to="/about" className="text-black font-medium hover:text-emerald-950">About</Link>
-          <Link to="/login" className="text-black font-medium hover:text-emerald-950">Login</Link>
-          <Link to="/profile" className="text-black font-medium hover:text-emerald-950"><FaRegUser /></Link>
 
+          {/* Login OR Username on mobile */}
+          {!user ? (
+            <Link to="/login" className="text-black font-medium hover:text-emerald-950">Login</Link>
+          ) : (
+            <>
+              <div className="text-black font-medium">{displayName || "Profile"}</div>
+
+              {/* Mobile Profile Collapsible */}
+              <div className="border-t border-gray-200 pt-2">
+                <button
+                  onClick={() => setMobileProfileOpen((o) => !o)}
+                  className="flex items-center gap-2 text-black font-medium hover:text-emerald-950 w-full"
+                  aria-expanded={mobileProfileOpen}
+                  aria-controls="mobile-profile-menu"
+                >
+                  <FaRegUser /> Profile
+                  <span className={`ml-auto text-xs transition-transform ${mobileProfileOpen ? "rotate-180" : ""}`}>▼</span>
+                </button>
+
+                {mobileProfileOpen && (
+                  <div id="mobile-profile-menu" className="mt-2 pl-7 flex flex-col gap-2">
+                    <Link
+                      to="/favorites"
+                      onClick={() => { setMobileProfileOpen(false); setMenuOpen(false); }}
+                      className="text-sm text-gray-800 hover:text-emerald-950"
+                    >
+                      Favorites
+                    </Link>
+                    <Link
+                      to="/registrations"
+                      onClick={() => { setMobileProfileOpen(false); setMenuOpen(false); }}
+                      className="text-sm text-gray-800 hover:text-emerald-950"
+                    >
+                      My Registrations
+                    </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => { setMobileProfileOpen(false); setMenuOpen(false); }}
+                      className="text-sm text-gray-800 hover:text-emerald-950"
+                    >
+                      My Profile
+                    </Link>
+                    <button
+                      onClick={() => { logout(); setMobileProfileOpen(false); setMenuOpen(false); }}
+                      className="text-left text-sm text-red-600 hover:text-red-700"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Mobile Search */}
           <div className="flex items-center border pl-4 gap-2 border-gray-500/30 h-[46px] rounded-full overflow-hidden w-full bg-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 30 30" fill="#6B7280">
               <path d="M13 3C7.489 3 3 7.489 3 13s4.489 10 10 10a9.95 9.95 0 0 0 6.322-2.264l5.971 5.971a1 1 0 1 0 1.414-1.414l-5.97-5.97A9.95 9.95 0 0 0 23 13c0-5.511-4.489-10-10-10m0 2c4.43 0 8 3.57 8 8s-3.57 8-8 8-8-3.57-8-8 3.57-8 8-8"/>

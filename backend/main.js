@@ -3,11 +3,11 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
 import { connectDB } from './config/db.js';
 import placeRoutes from './routes/PlaceRoute.js';
 import authRoutes from './routes/AuthRoute.js';
 import adminRoutes from './routes/AdminRoute.js';
+import registrationRoutes from "./routes/RegistrationRoute.js";
 
 dotenv.config();
 
@@ -49,6 +49,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use('/api/places', placeRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use("/api/registrations", registrationRoutes);
 
 // Frontend serve for production
 if (process.env.NODE_ENV === "production") {

@@ -16,13 +16,23 @@ import Profile from "./Pages/User/Profile";
 import About from "./Pages/User/About";
 import UserManagement from "./Pages/Admin/UserManagement";
 import PlacePreview from "./Pages/User/PlacePreview";
-
-
+import GoogleTranslate from "./Components/GoogleTranslate";
+import RegistrationManagement from "./Pages/Admin/RegistrationManagement";
 
 function App() {
 
   const location = useLocation();
-  const adminRoutes = ["/admin-dashboard", "/user-management", "/place-management", "/register", "/login", "/reset-password", "/forgot-password"];
+  const adminRoutes = [
+    "/",
+    "/admin-dashboard",
+    "/user-management",
+    "/place-management",
+    "/register",
+    "/login",
+    "/reset-password",
+    "/forgot-password",
+    "/registration-management"
+  ];
   const isAdminRoute = adminRoutes.includes(location.pathname);
 
   return (
@@ -33,7 +43,9 @@ function App() {
       {/* Main Content */}
       <main className="flex-grow">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          {/* Landing page now points to Login */}
+          <Route path="/" element={<Login />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -43,11 +55,10 @@ function App() {
           <Route path="/places/:id" element={<PlacePreview />} />
           <Route path="/place-management" element={<PlaceManagement />} />
           <Route path="/user-management" element={<UserManagement />} />
+          <Route path="/registration-management" element={<RegistrationManagement />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
-
-
         </Routes>
       </main>
 
@@ -56,6 +67,11 @@ function App() {
 
       {/* Footer (not shown on admin routes) */}
       {!isAdminRoute && <Footer />}
+
+    <div className="fixed bottom-4 right-4 z-50">
+        <GoogleTranslate />
+      </div>
+
     </div>
   );
 }

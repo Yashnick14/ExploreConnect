@@ -1,5 +1,7 @@
-import React from "react";
+// src/Components/PlaceModal.jsx
+import React, { useEffect, useState } from "react";
 import { IoCloudUploadOutline } from "react-icons/io5";
+import WorkingHoursModal, { DEFAULT_WEEKLY, makeCompactHours } from "./WorkingHoursModal";
 
 const PlaceModal = ({
   isEditMode,
@@ -10,10 +12,73 @@ const PlaceModal = ({
   handleSubmit,
   onCancel,
 }) => {
+  const [hoursOpen, setHoursOpen] = useState(false);
+
+  const [weekly, setWeekly] = useState(() => {
+    try {
+      if (form?.workingHoursWeekly) {
+        const parsed =
+          typeof form.workingHoursWeekly === "string"
+            ? JSON.parse(form.workingHoursWeekly)
+            : form.workingHoursWeekly;
+        if (Array.isArray(parsed) && parsed.length === 7) return parsed;
+      }
+    } catch {}
+    return DEFAULT_WEEKLY;
+  });
+
+  // keep local weekly in sync when EDIT injects saved weekly JSON
+  useEffect(() => {
+    try {
+      if (form?.workingHoursWeekly) {
+        const parsed =
+          typeof form.workingHoursWeekly === "string"
+            ? JSON.parse(form.workingHoursWeekly)
+            : form.workingHoursWeekly;
+        if (Array.isArray(parsed) && parsed.length === 7) setWeekly(parsed);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form?.workingHoursWeekly]);
+
+  useEffect(() => {
+    if (!isEditMode && !form.workingHours) {
+      setForm((prev) => ({ ...prev, workingHours: "" }));
+    }
+    // ensure removedIndexes exists for edit sessions
+    setForm((prev) => ({ ...prev, removedIndexes: prev.removedIndexes ?? [] }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const openWeeklyModal = (e) => {
+    e.preventDefault();
+    setHoursOpen(true);
+  };
+
+  const saveWeekly = (val) => {
+    setWeekly(val);
+    setForm((prev) => ({
+      ...prev,
+      workingHours: makeCompactHours(val),
+      workingHoursWeekly: JSON.stringify(val),
+    }));
+    setHoursOpen(false);
+  };
+
+  // IMPORTANT: record index if the removed image is an existing URL (string)
   const handleRemoveImage = (index) => {
-    const updatedImages = [...form.images];
+    const current = form.images?.[index];
+    const updatedImages = [...(form.images || [])];
     updatedImages[index] = null;
-    setForm({ ...form, images: updatedImages });
+
+    setForm((prev) => {
+      let removed = prev.removedIndexes || [];
+      if (typeof current === "string") {
+        // avoid duplicates
+        if (!removed.includes(index)) removed = [...removed, index];
+      }
+      return { ...prev, images: updatedImages, removedIndexes: removed };
+    });
   };
 
   return (
@@ -22,18 +87,17 @@ const PlaceModal = ({
         <h3 className="text-xl font-bold text-center mb-4">
           {isEditMode ? "Edit Place" : "Add New Place"}
         </h3>
+
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Image Upload Section */}
+            {/* Images */}
             <div className="md:w-1/4 grid grid-cols-2 gap-2">
               {[0, 1, 2, 3].map((index) => {
                 const image = form.images?.[index];
                 let previewUrl = "";
-                if (image && typeof image === "string") {
-                  previewUrl = image;
-                } else if (image instanceof File) {
-                  previewUrl = URL.createObjectURL(image);
-                }
+                if (image && typeof image === "string") previewUrl = image;
+                else if (image instanceof File) previewUrl = URL.createObjectURL(image);
+
                 return (
                   <div key={index} className="relative">
                     <label
@@ -49,38 +113,33 @@ const PlaceModal = ({
                       ) : (
                         <>
                           <IoCloudUploadOutline className="text-2xl text-gray-400" />
-                          <p className="text-[10px]">
-                            {index === 0 ? "Required" : "Optional"}
-                          </p>
+                          <p className="text-[10px]">{index === 0 ? "Required" : "Optional"}</p>
                         </>
                       )}
                       <input
                         id={`imageUpload${index}`}
                         type="file"
                         accept="image/*"
-                        onChange={(e) =>
-                          handleImageChange(index, e.target.files[0])
-                        }
+                        onChange={(e) => handleImageChange(index, e.target.files[0])}
                         className="hidden"
                       />
                     </label>
+
                     {image && (
                       <button
                         type="button"
                         onClick={() => {
-                          const current =
-                            form.images.filter((img) => img !== null);
-                          if (current.length > 1) handleRemoveImage(index);
+                          const count = (form.images || []).filter((img) => img !== null).length;
+                          if (count > 1) handleRemoveImage(index);
                           else alert("At least one image is required.");
                         }}
                         className={`absolute top-1 right-1 bg-white text-xs px-1 rounded shadow ${
-                          form.images.filter((img) => img !== null).length <= 1
+                          (form.images || []).filter((img) => img !== null).length <= 1
                             ? "text-gray-400 cursor-not-allowed"
                             : "text-red-600"
                         }`}
-                        disabled={
-                          form.images.filter((img) => img !== null).length <= 1
-                        }
+                        disabled={(form.images || []).filter((img) => img !== null).length <= 1}
+                        aria-label={`Remove image ${index + 1}`}
                       >
                         ✕
                       </button>
@@ -90,7 +149,7 @@ const PlaceModal = ({
               })}
             </div>
 
-            {/* Input Fields */}
+            {/* Fields */}
             <div className="md:w-3/4 grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 type="text"
@@ -101,15 +160,29 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded"
                 required
               />
-              <input
-                type="text"
-                name="workingHours"
-                value={form.workingHours}
-                onChange={handleChange}
-                placeholder="Working Hours (e.g. 9am-5pm)"
-                className="bg-gray-100 px-3 py-1.5 rounded"
-                required
-              />
+
+              {/* Working Hours (opens modal) */}
+              <div className="relative">
+                <input
+                  type="text"
+                  name="workingHours"
+                  value={form.workingHours}
+                  onFocus={openWeeklyModal}
+                  onClick={openWeeklyModal}
+                  readOnly
+                  placeholder="Working Hours"
+                  className="bg-gray-100 px-3 py-1.5 rounded w-full cursor-pointer"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={openWeeklyModal}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sm underline text-gray-600"
+                >
+                  Edit weekly hours
+                </button>
+              </div>
+
               <input
                 type="text"
                 name="location"
@@ -119,6 +192,7 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded"
                 required
               />
+
               <textarea
                 name="description"
                 value={form.description}
@@ -128,6 +202,7 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded resize-none"
                 required
               />
+
               <input
                 type="text"
                 name="district"
@@ -137,6 +212,7 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded"
                 required
               />
+
               <input
                 type="text"
                 name="category"
@@ -146,6 +222,8 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded"
                 required
               />
+
+              {/* Contact number */}
               <input
                 type="text"
                 name="contactNumber"
@@ -155,25 +233,29 @@ const PlaceModal = ({
                 className="bg-gray-100 px-3 py-1.5 rounded"
                 required
               />
-              <input
-                type="text"
-                name="lat"
-                value={form.lat}
-                onChange={handleChange}
-                placeholder="Latitude (e.g. 37.7749)"
-                className="bg-gray-100 px-3 py-1.5 rounded"
-                required
-              />
-              <input
-                type="text"
-                name="lng"
-                value={form.lng}
-                onChange={handleChange}
-                placeholder="Longitude (e.g. -122.4194)"
-                className="bg-gray-100 px-3 py-1.5 rounded"
-                required
-              />
-              <label className="flex items-center gap-2">
+
+              {/* Latitude + Longitude */}
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  name="lat"
+                  value={form.lat || ""}
+                  onChange={handleChange}
+                  placeholder="Latitude"
+                  className="bg-gray-100 px-3 py-1.5 rounded"
+                />
+                <input
+                  type="text"
+                  name="lng"
+                  value={form.lng || ""}
+                  onChange={handleChange}
+                  placeholder="Longitude"
+                  className="bg-gray-100 px-3 py-1.5 rounded"
+                />
+              </div>
+
+              {/* Pets Allowed */}
+              <label className="flex items-center gap-2 md:col-start-2">
                 <input
                   type="checkbox"
                   name="petsAllowed"
@@ -182,27 +264,44 @@ const PlaceModal = ({
                 />
                 <span>Pets Allowed</span>
               </label>
+
+              {/* Hidden: weekly JSON */}
+              <input
+                type="hidden"
+                name="workingHoursWeekly"
+                value={form.workingHoursWeekly || JSON.stringify(weekly)}
+                readOnly
+              />
+
+              {/* Hidden: removed indexes */}
+              <input
+                type="hidden"
+                name="removedIndexes"
+                value={JSON.stringify(form.removedIndexes || [])}
+                readOnly
+              />
             </div>
           </div>
 
           {/* Buttons */}
           <div className="flex justify-center gap-4 mt-6">
-            <button
-              type="submit"
-              className="bg-black text-white px-6 py-2 rounded"
-            >
+            <button type="submit" className="bg-black text-white px-6 py-2 rounded">
               {isEditMode ? "Update" : "Add"}
             </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="border px-6 py-2 rounded"
-            >
+            <button type="button" onClick={onCancel} className="border px-6 py-2 rounded">
               Cancel
             </button>
           </div>
         </form>
       </div>
+
+      {hoursOpen && (
+        <WorkingHoursModal
+          value={weekly}
+          onClose={() => setHoursOpen(false)}
+          onSave={saveWeekly}
+        />
+      )}
     </div>
   );
 };

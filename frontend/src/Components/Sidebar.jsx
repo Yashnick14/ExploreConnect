@@ -7,6 +7,7 @@ import {
   HiOutlineCog,
 } from "react-icons/hi";
 import logo from "../assets/logoadmin.png"; // Adjust the path as necessary
+import { RiFileList3Line } from "react-icons/ri";
 
 
 const Sidebar = () => {
@@ -67,6 +68,18 @@ const Sidebar = () => {
           >
             <HiOutlineUserGroup className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
             <span className="truncate">Users</span>
+          </NavLink>
+
+          <NavLink
+            to="/registration-management"
+            className={({ isActive }) =>
+              `${baseLinkClasses} ${
+                isActive ? activeLinkClasses : "hover:bg-emerald-700/50"
+              }`
+            }
+          >
+            <RiFileList3Line className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Registrations</span>
           </NavLink>
 
           {/* Settings Button */}

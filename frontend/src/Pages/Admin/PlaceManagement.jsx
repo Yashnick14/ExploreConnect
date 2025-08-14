@@ -6,6 +6,32 @@ import "react-toastify/dist/ReactToastify.css";
 import { FiMenu } from "react-icons/fi";
 import PlaceModal from "../../Components/PlaceModal";
 
+/* --- Helpers to normalize weekly schedule from DB to UI --- */
+const DAY_LABEL = {
+  Sun: "Sunday",
+  Mon: "Monday",
+  Tue: "Tuesday",
+  Wed: "Wednesday",
+  Thu: "Thursday",
+  Fri: "Friday",
+  Sat: "Saturday",
+};
+
+// DB: [{day,isOpen,open,close}] -> UI: [{key,label,isOpen,open,close}]
+function normalizeWeeklyForUI(arr) {
+  if (!Array.isArray(arr) || arr.length !== 7) return null;
+  return arr.map((d) => {
+    const key = d.key || d.day;
+    return {
+      key,
+      label: DAY_LABEL[key] || d.label || key,
+      isOpen: !!d.isOpen,
+      open: d.open || "09:00",
+      close: d.close || "17:00",
+    };
+  });
+}
+
 // exactly your UserManagement delete modal
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
@@ -64,14 +90,17 @@ const PlaceManagement = () => {
     category: "",
     contactNumber: "",
     workingHours: "",
+    workingHoursWeekly: undefined, // <-- include this so edit can inject it
     petsAllowed: false,
     lat: "",
     lng: "",
+    removedIndexes: [],
   };
   const [form, setForm] = useState(defaultForm);
 
   useEffect(() => {
     fetchPlaces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (e) => {
@@ -98,6 +127,9 @@ const PlaceManagement = () => {
     ];
     while (paddedImages.length < 4) paddedImages.push(null);
 
+    // normalize DB weekly -> UI weekly and pass as JSON string
+    const uiWeekly = normalizeWeeklyForUI(p.workingHoursWeekly);
+
     setForm({
       name: p.name,
       description: p.description,
@@ -107,9 +139,11 @@ const PlaceManagement = () => {
       category: p.category,
       contactNumber: p.contactNumber,
       workingHours: p.workingHours,
+      workingHoursWeekly: uiWeekly ? JSON.stringify(uiWeekly) : undefined,
       petsAllowed: p.petsAllowed,
       lat: p.lat?.toString() || "",
       lng: p.lng?.toString() || "",
+      removedIndexes: [],
     });
 
     setEditingPlace(p._id);
@@ -226,9 +260,7 @@ const PlaceManagement = () => {
               onClick={handleEdit}
               disabled={!selectedPlaceId}
               className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                !selectedPlaceId
-                  ? "bg-gray-400"
-                  : "bg-black hover:bg-gray-800"
+                !selectedPlaceId ? "bg-gray-400" : "bg-black hover:bg-gray-800"
               }`}
             >
               EDIT
@@ -237,9 +269,7 @@ const PlaceManagement = () => {
               onClick={handleDeleteClick}
               disabled={!selectedPlaceId}
               className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                !selectedPlaceId
-                  ? "bg-gray-400"
-                  : "bg-red-600 hover:bg-red-700"
+                !selectedPlaceId ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"
               }`}
             >
               DELETE

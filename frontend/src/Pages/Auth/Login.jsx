@@ -1,20 +1,29 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import {signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signInAnonymously,} from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signInAnonymously,
+} from "firebase/auth";
 import { auth } from "../../Firebase";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
 import bgImage from "../../assets/login3.jpg";
+import { useAuthStore } from "@/store/Auth/auth";
 
 const Login = () => {
   const navigate = useNavigate();
+  const setUser = useAuthStore((s) => s.setUser);
+
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // Call backend login, store user in zustand (and localStorage), route by role
   const authenticateUser = async (idToken, userInfo = null) => {
     try {
       const response = await axios.post(
@@ -23,32 +32,34 @@ const Login = () => {
       );
 
       if (response.data.success) {
-        const { role } = response.data.user;
-        toast.success("Login successful");
+        const backendUser = response.data.user;
+        const { role } = backendUser;
 
-        if (role === "admin") {
-          navigate("/admin-dashboard");
-        } else {
-          navigate("/");
-        }
+        // Save globally so Navbar can display username
+        setUser(backendUser);
+
+        toast.success("Login successful");
+        if (role === "admin") navigate("/admin-dashboard");
+        else navigate("/home");
+        return backendUser;
       } else {
         toast.error(response.data.message || "Login failed");
+        return null;
       }
     } catch (err) {
       const message = err?.response?.data?.message;
 
       if (err.response?.status === 403 && message?.includes("deactivated")) {
         toast.error("Your account has been deactivated. Contact support.");
-        return;
+        return null;
       }
 
-      if (
-        err.response?.data?.message === "User not found" &&
-        userInfo !== null
-      ) {
-        await registerAndRetryLogin(idToken, userInfo);
+      // If not found on backend but Google returned user info, register then retry
+      if (err.response?.data?.message === "User not found" && userInfo !== null) {
+        return await registerAndRetryLogin(idToken, userInfo);
       } else {
         toast.error(message || "Server error");
+        return null;
       }
     }
   };
@@ -67,9 +78,10 @@ const Login = () => {
         payload
       );
 
-      await authenticateUser(idToken);
+      return await authenticateUser(idToken);
     } catch (err) {
       toast.error("Registration failed: " + err.message);
+      return null;
     }
   };
 
@@ -85,18 +97,7 @@ const Login = () => {
       );
 
       const user = userCredential.user;
-
-      await user.reload(); // Ensure we have the latest emailVerified status
-
-      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
-      const userEmail = user.email?.trim().toLowerCase();
-
-      // Uncomment this if email verification is required
-      // if (!user.emailVerified && userEmail !== adminEmail) {
-      //   toast.error("Please verify your email before logging in.");
-      //   setLoading(false);
-      //   return;
-      // }
+      await user.reload();
 
       const idToken = await user.getIdToken();
       await authenticateUser(idToken);
@@ -115,7 +116,10 @@ const Login = () => {
 
       await authenticateUser(idToken, result.user);
     } catch (err) {
-      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+      if (
+        err.code === "auth/popup-closed-by-user" ||
+        err.code === "auth/cancelled-popup-request"
+      ) {
         toast.error("Google login was cancelled.");
       } else {
         toast.error("Google login failed: " + err.message);
@@ -123,15 +127,12 @@ const Login = () => {
     }
   };
 
-
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInAnonymously(auth);
-      const user = userCredential.user;
-
+      await signInAnonymously(auth);
       toast.success("Logged in as Guest");
-      navigate("/");
+      navigate("/home");
     } catch (err) {
       toast.error("Guest login failed: " + err.message);
     } finally {
@@ -191,11 +192,6 @@ const Login = () => {
         </form>
 
         <div className="my-5 text-gray-500 text-sm">or</div>
-
-        {/* <div className="text-center text-xs text-black mb-3 relative">
-          <span className=" px-2">Or Sign-in with</span>
-          <div className="absolute left-0 top-1/2 w-full border-t border-gray-300 transform -translate-y-1/2"></div>
-        </div> */}
 
         <div className="flex gap-3 my-5">
           <button

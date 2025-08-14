@@ -5,7 +5,6 @@ import heroImage1 from "../../assets/mount8.jpg";
 import heroImage2 from "../../assets/mount7.jpg";
 import heroImage3 from "../../assets/deers.jpg";
 import infoImage from "../../assets/mount10.jpg";
-import { CiSearch } from "react-icons/ci";
 
 const HomePage = () => {
   const { fetchLatestPlaces, latestPlaces } = usePlaceStore();
