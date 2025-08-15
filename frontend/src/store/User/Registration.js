@@ -1,40 +1,44 @@
-// src/store/Registration/registration.js
+// src/store/User/Registration.js
 import { create } from "zustand";
+
+// ---- API base (from Vite env). Trim trailing slashes.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/g, "");
+const api = (path) => `${API_BASE}${path}`; // ensures no double slashes
 
 export const useRegistrationStore = create((set, get) => ({
   registrations: [],
 
-  setRegistrations: (list) => set({ registrations: list }),
+  setRegistrations: (list) =>
+    set({ registrations: Array.isArray(list) ? list : [] }),
 
   createRegistration: async (payload) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || ""}/api/registrations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(api("/api/registrations"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const data = await res.json();
-      if (!data.success) return { success: false, message: data.message || "Failed to register" };
+      if (!data.success)
+        return { success: false, message: data.message || "Failed to register" };
 
-      // optionally push into list
       set((s) => ({ registrations: [data.data, ...s.registrations] }));
       return { success: true, data: data.data };
     } catch (err) {
-      console.error("❌ createRegistration error:", err.message);
+      console.error("❌ createRegistration error:", err);
       return { success: false, message: "Server error" };
     }
   },
 
-  // Optional: list registrations (optionally by place)
-  fetchRegistrations: async ({ placeId } = {}) => {
+  // Supports optional filters: { placeId, email }
+  fetchRegistrations: async ({ placeId, email } = {}) => {
     try {
-      const url = new URL(`${import.meta.env.VITE_API_BASE_URL || ""}/api/registrations`, window.location.origin);
-      if (placeId) url.searchParams.set("place", placeId);
+      // Build query with a proper URL object (works for both proxied and absolute APIs)
+      const u = new URL(api("/api/registrations"), window.location.origin);
+      if (placeId) u.searchParams.set("place", placeId);
+      if (email) u.searchParams.set("email", email);
 
-      const res = await fetch(url.toString().replace(window.location.origin, ""));
+      const res = await fetch(u.toString().replace(window.location.origin, ""));
       const data = await res.json();
       if (!data.success) {
         set({ registrations: [] });
@@ -43,26 +47,51 @@ export const useRegistrationStore = create((set, get) => ({
       set({ registrations: data.data || [] });
       return { success: true, data: data.data };
     } catch (err) {
-      console.error("❌ fetchRegistrations error:", err.message);
+      console.error("❌ fetchRegistrations error:", err);
       set({ registrations: [] });
       return { success: false, message: "Server error" };
     }
   },
 
-  // Optional: delete
+  // UPDATE — used by your Edit modal
+  updateRegistration: async (id, patch) => {
+    try {
+      const res = await fetch(api(`/api/registrations/${id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch || {}),
+      });
+      const data = await res.json();
+      if (!data.success)
+        return { success: false, message: data.message || "Failed to update" };
+
+      set((s) => ({
+        registrations: s.registrations.map((r) =>
+          r._id === id ? data.data : r
+        ),
+      }));
+      return { success: true, data: data.data };
+    } catch (err) {
+      console.error("❌ updateRegistration error:", err);
+      return { success: false, message: "Server error" };
+    }
+  },
+
   deleteRegistration: async (id) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || ""}/api/registrations/${id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(api(`/api/registrations/${id}`), {
+        method: "DELETE",
+      });
       const data = await res.json();
-      if (!data.success) return { success: false, message: data.message || "Failed to delete" };
+      if (!data.success)
+        return { success: false, message: data.message || "Failed to delete" };
 
-      set((s) => ({ registrations: s.registrations.filter((r) => r._id !== id) }));
+      set((s) => ({
+        registrations: s.registrations.filter((r) => r._id !== id),
+      }));
       return { success: true };
     } catch (err) {
-      console.error("❌ deleteRegistration error:", err.message);
+      console.error("❌ deleteRegistration error:", err);
       return { success: false, message: "Server error" };
     }
   },

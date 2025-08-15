@@ -4,6 +4,7 @@ import {
   createRegistration,
   listRegistrations,
   getRegistrationById,
+  updateRegistration,
   deleteRegistration,
 } from "../controllers/RegistrationController.js";
 
@@ -17,6 +18,9 @@ router.get("/", listRegistrations);
 
 // Get single registration
 router.get("/:id", getRegistrationById);
+
+// Update a registration
+router.patch("/:id", updateRegistration);
 
 // Delete a registration
 router.delete("/:id", deleteRegistration);

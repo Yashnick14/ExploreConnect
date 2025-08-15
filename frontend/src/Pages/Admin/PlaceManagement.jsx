@@ -1,3 +1,4 @@
+// src/Pages/Admin/PlaceManagement.jsx
 import React, { useEffect, useState } from "react";
 import { usePlaceStore } from "../../store/Place/place";
 import Sidebar from "../../Components/Sidebar";
@@ -17,7 +18,6 @@ const DAY_LABEL = {
   Sat: "Saturday",
 };
 
-// DB: [{day,isOpen,open,close}] -> UI: [{key,label,isOpen,open,close}]
 function normalizeWeeklyForUI(arr) {
   if (!Array.isArray(arr) || arr.length !== 7) return null;
   return arr.map((d) => {
@@ -32,7 +32,11 @@ function normalizeWeeklyForUI(arr) {
   });
 }
 
-// exactly your UserManagement delete modal
+// EXACTLY like navbar
+const uploadURL = (file) =>
+  file ? `http://localhost:5000/uploads/${file}` : null;
+
+// Delete confirm modal
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
@@ -90,7 +94,7 @@ const PlaceManagement = () => {
     category: "",
     contactNumber: "",
     workingHours: "",
-    workingHoursWeekly: undefined, // <-- include this so edit can inject it
+    workingHoursWeekly: undefined,
     petsAllowed: false,
     lat: "",
     lng: "",
@@ -100,8 +104,7 @@ const PlaceManagement = () => {
 
   useEffect(() => {
     fetchPlaces();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchPlaces]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -122,12 +125,10 @@ const PlaceManagement = () => {
     const p = places.find((x) => x._id === selectedPlaceId);
     if (!p) return;
 
-    const paddedImages = [
-      ...p.images.map((img) => `${import.meta.env.VITE_API_BASE_URL}/uploads/${img}`),
-    ];
+    // Pre-fill modal images using the SAME absolute URL style as navbar
+    const paddedImages = [...(p.images || []).map(uploadURL)];
     while (paddedImages.length < 4) paddedImages.push(null);
 
-    // normalize DB weekly -> UI weekly and pass as JSON string
     const uiWeekly = normalizeWeeklyForUI(p.workingHoursWeekly);
 
     setForm({
@@ -172,7 +173,6 @@ const PlaceManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // validations
     const hoursRe = /^([1-9]|1[0-2])([ap]m)-([1-9]|1[0-2])([ap]m)$/i;
     const phoneRe = /^\d{10}$/;
     if (!hoursRe.test(form.workingHours)) {
@@ -183,7 +183,6 @@ const PlaceManagement = () => {
       toast.error("Contact number must be 10 digits");
       return;
     }
-    // optionally validate lat/lng are numeric
     if (isNaN(parseFloat(form.lat)) || isNaN(parseFloat(form.lng))) {
       toast.error("Latitude and Longitude must be valid numbers");
       return;
@@ -279,11 +278,13 @@ const PlaceManagement = () => {
 
         {/* Table */}
         <div className="mt-6 bg-white shadow rounded overflow-x-auto">
-          <table className="min-w-[800px] w-full border-separate border-spacing-y-3">
+          <table className="min-w-[920px] w-full border-separate border-spacing-y-3">
             <thead className="bg-[#D5F5E3] text-gray-700 text-sm">
               <tr>
                 <th className="px-4 py-3 text-left">Select</th>
                 <th className="px-4 py-3 text-left">ID</th>
+                {/* NEW: Image only */}
+                <th className="px-4 py-3 text-left">Image</th>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">District</th>
                 <th className="px-4 py-3 text-left">Category</th>
@@ -294,42 +295,58 @@ const PlaceManagement = () => {
             <tbody>
               {places.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-6 text-gray-500">
+                  <td colSpan="8" className="text-center py-6 text-gray-500">
                     No places available.
                   </td>
                 </tr>
               ) : (
-                places.map((p, i) => (
-                  <tr
-                    key={p._id}
-                    className="bg-white shadow-sm hover:shadow-md"
-                  >
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedPlaceId === p._id}
-                        onChange={() =>
-                          setSelectedPlaceId((s) =>
-                            s === p._id ? null : p._id
-                          )
-                        }
-                        className="h-4 w-4 text-blue-600"
-                      />
-                    </td>
-                    <td className="px-4 py-3">{i + 1}</td>
-                    <td className="px-4 py-3">{p.name}</td>
-                    <td className="px-4 py-3">{p.district}</td>
-                    <td className="px-4 py-3">{p.category}</td>
-                    <td className="px-4 py-3">{p.workingHours}</td>
-                    <td className="px-4 py-3">
-                      {p.petsAllowed ? (
-                        <span className="text-green-600">Yes</span>
-                      ) : (
-                        <span className="text-red-600">No</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                places.map((p, i) => {
+                  const img = uploadURL(p.images?.[0]); // same as navbar
+                  return (
+                    <tr key={p._id} className="bg-white shadow-sm hover:shadow-md">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedPlaceId === p._id}
+                          onChange={() =>
+                            setSelectedPlaceId((s) => (s === p._id ? null : p._id))
+                          }
+                          className="h-4 w-4 text-blue-600"
+                        />
+                      </td>
+                      <td className="px-4 py-3">{i + 1}</td>
+
+                      {/* Image ONLY */}
+                      <td className="px-4 py-3">
+                        <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
+                          {img ? (
+                            <img
+                              src={img}
+                              alt={p.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200" />
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Keep other elements as they are */}
+                      <td className="px-4 py-3">{p.name}</td>
+                      <td className="px-4 py-3">{p.district}</td>
+                      <td className="px-4 py-3">{p.category}</td>
+                      <td className="px-4 py-3">{p.workingHours}</td>
+                      <td className="px-4 py-3">
+                        {p.petsAllowed ? (
+                          <span className="text-green-600">Yes</span>
+                        ) : (
+                          <span className="text-red-600">No</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

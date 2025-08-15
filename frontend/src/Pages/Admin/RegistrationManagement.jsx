@@ -1,3 +1,4 @@
+// src/Pages/Admin/RegistrationManagement.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "../../Components/Sidebar";
 import { toast, ToastContainer } from "react-toastify";
@@ -5,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { FiMenu } from "react-icons/fi";
 import { useRegistrationStore } from "../../store/User/Registration";
 
-// Reuse the same modal style you used in Users page
+/* ---------- Confirm Delete Modal ---------- */
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
@@ -22,7 +23,9 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
       </div>
       <h2 className="text-gray-900 font-semibold mt-4 text-xl">Are you sure?</h2>
       <p className="text-sm text-gray-600 mt-2 text-center">
-        Do you really want to continue? This action<br />cannot be undone.
+        Do you really want to continue? This action
+        <br />
+        cannot be undone.
       </p>
       <div className="flex items-center justify-center gap-4 mt-5 w-full">
         <button
@@ -44,6 +47,59 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
+/* ---------- Edit Status Modal ---------- */
+const STATUS_OPTIONS = [
+  { value: "pending",   label: "Pending"   },
+  { value: "approved",   label: "Approved"   },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const EditStatusModal = ({ currentStatus = "pending", onCancel, onSave, saving = false }) => {
+  const [status, setStatus] = useState(currentStatus || "pending");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+      <div className="bg-white shadow-md rounded-xl p-6 w-[360px] border border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900">Edit Registration</h2>
+        <p className="text-sm text-gray-600 mt-1">Change the registration status.</p>
+
+        <label className="block text-sm text-gray-700 mt-4 mb-1">Status</label>
+        <select
+          className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm bg-white"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          disabled={saving}
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        <div className="flex items-center justify-end gap-3 mt-6">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-60"
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(status)}
+            className="px-5 py-2 rounded-md bg-black text-white text-sm font-medium hover:bg-gray-900 disabled:opacity-60"
+            disabled={saving}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------- helpers ---------- */
 const formatDate = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -51,34 +107,38 @@ const formatDate = (iso) => {
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
-  return `${dd}-${mm}-${yyyy}`; // matches your screenshot style
+  return `${dd}-${mm}-${yyyy}`;
 };
 
 const statusChip = (status = "") => {
   const s = status.toLowerCase();
-  if (s === "completed")
-    return "bg-green-200 text-green-700";
-  if (s === "arrived")
-    return "bg-blue-200 text-blue-700";
-  // default pending
-  return "bg-yellow-200 text-yellow-700";
+  if (s === "completed") return "bg-green-200 text-green-700";
+  if (s === "approved") return "bg-blue-200 text-blue-700";
+  if (s === "cancelled") return "bg-rose-200 text-rose-700";
+  return "bg-yellow-200 text-yellow-700"; // pending/default
 };
 
+/* ---------- Page ---------- */
 const RegistrationManagement = () => {
-  const { registrations, fetchRegistrations, deleteRegistration } = useRegistrationStore();
+  const {
+    registrations,
+    fetchRegistrations,
+    deleteRegistration,
+    updateRegistration,
+  } = useRegistrationStore();
 
   const [selectedId, setSelectedId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // map placeId -> name (we'll try to fetch all places once)
   const [placeMap, setPlaceMap] = useState({});
 
   useEffect(() => {
-    fetchRegistrations({}); // load all
-  }, []);
+    fetchRegistrations({});
+  }, [fetchRegistrations]);
 
-  // Fetch place names once (so "Registration" column shows a name)
+  // load place names for the table
   useEffect(() => {
     const loadPlaces = async () => {
       try {
@@ -98,6 +158,7 @@ const RegistrationManagement = () => {
   }, []);
 
   const rows = useMemo(() => registrations || [], [registrations]);
+  const selectedRow = rows.find((r) => r._id === selectedId);
 
   const handleDelete = async () => {
     if (!selectedId) return;
@@ -105,10 +166,26 @@ const RegistrationManagement = () => {
     if (res?.success) {
       toast.success("Registration deleted");
       setSelectedId(null);
+      await fetchRegistrations({});
     } else {
       toast.error(res?.message || "Failed to delete");
     }
     setShowDeleteModal(false);
+  };
+
+  const handleEditSave = async (newStatus) => {
+    if (!selectedId) return;
+    setSavingEdit(true);
+    const res = await updateRegistration(selectedId, { status: newStatus });
+    setSavingEdit(false);
+
+    if (res?.success) {
+      toast.success("Registration updated");
+      setShowEditModal(false);
+      await fetchRegistrations({}); // ensure table reflects latest DB state
+    } else {
+      toast.error(res?.message || "Failed to update registration");
+    }
   };
 
   return (
@@ -142,23 +219,20 @@ const RegistrationManagement = () => {
             <button className="bg-black text-white px-4 py-2 rounded w-full sm:w-auto">
               All
             </button>
-            {/* Keep buttons to match the look; disable Add/Edit for now */}
+
+            {/* EDIT (opens status modal) */}
             <button
-              disabled
-              className="bg-black/60 cursor-not-allowed text-white px-4 py-2 rounded w-full sm:w-auto"
-              title="Add via user-facing flow"
-            >
-              ADD
-            </button>
-            <button
+              onClick={() => setShowEditModal(true)}
               disabled={!selectedId}
               className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
                 !selectedId ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
               }`}
-              title="No edit API wired"
+              title={!selectedId ? "Select a registration" : "Edit status"}
             >
               EDIT
             </button>
+
+            {/* DELETE */}
             <button
               onClick={() => setShowDeleteModal(true)}
               disabled={!selectedId}
@@ -207,7 +281,6 @@ const RegistrationManagement = () => {
                     <td className="px-4 py-3">{idx + 1}</td>
                     <td className="px-4 py-3">{r.name}</td>
                     <td className="px-4 py-3">
-                      {/* show place name if we know it; else fallback gracefully */}
                       {r.place?.name || placeMap[r.place] || placeMap[r.place?._id] || r.place || "—"}
                     </td>
                     <td className="px-4 py-3">{formatDate(r.date)}</td>
@@ -229,6 +302,15 @@ const RegistrationManagement = () => {
           <DeleteConfirmModal
             onCancel={() => setShowDeleteModal(false)}
             onConfirm={handleDelete}
+          />
+        )}
+
+        {showEditModal && selectedRow && (
+          <EditStatusModal
+            currentStatus={selectedRow.status || "pending"}
+            onCancel={() => setShowEditModal(false)}
+            onSave={handleEditSave}
+            saving={savingEdit}
           />
         )}
       </div>

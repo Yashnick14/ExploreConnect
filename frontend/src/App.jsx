@@ -18,6 +18,7 @@ import UserManagement from "./Pages/Admin/UserManagement";
 import PlacePreview from "./Pages/User/PlacePreview";
 import GoogleTranslate from "./Components/GoogleTranslate";
 import RegistrationManagement from "./Pages/Admin/RegistrationManagement";
+import MyRegistrations from "@/Pages/User/Registrations";
 
 function App() {
 
@@ -58,6 +59,7 @@ function App() {
           <Route path="/registration-management" element={<RegistrationManagement />} />
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/registrations" element={<MyRegistrations />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </main>

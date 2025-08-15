@@ -31,7 +31,7 @@ export const createRegistration = async (req, res) => {
     const reg = await Registration.create({
       place: placeId,
       name,
-      email,
+      email: String(email).toLowerCase(), // normalize
       phone,
       date: dateObj,
       time,
@@ -48,11 +48,20 @@ export const createRegistration = async (req, res) => {
 
 export const listRegistrations = async (req, res) => {
   try {
-    const { place } = req.query;
+    const { place, email } = req.query;
     const filter = {};
-    if (place && mongoose.Types.ObjectId.isValid(place)) filter.place = place;
 
-    const regs = await Registration.find(filter).sort({ createdAt: -1 });
+    if (place && mongoose.Types.ObjectId.isValid(place)) {
+      filter.place = place;
+    }
+    if (email) {
+      filter.email = String(email).toLowerCase(); // filter by user email
+    }
+
+    const regs = await Registration.find(filter)
+      .sort({ createdAt: -1 })
+      .populate("place", "name district"); // if place is a ref
+
     res.status(200).json({ success: true, data: regs });
   } catch (err) {
     console.error("List registrations error:", err);
@@ -71,6 +80,42 @@ export const getRegistrationById = async (req, res) => {
     res.status(200).json({ success: true, data: reg });
   } catch (err) {
     console.error("Get registration error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const updateRegistration = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id))
+    return res.status(400).json({ success: false, message: "Invalid ID" });
+
+  try {
+    const allowed = ["status", "name", "email", "phone", "date", "time", "people", "place"];
+    const patch = {};
+    for (const k of allowed) {
+      if (typeof req.body[k] !== "undefined") patch[k] = req.body[k];
+    }
+
+    // status guard (optional)
+    if (patch.status && !["pending", "approved", "completed", "cancelled"].includes(patch.status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    // convert date if provided as dd/MM/yyyy
+    if (typeof patch.date === "string") {
+      const d = parseDDMMYYYY(patch.date);
+      if (!d) return res.status(400).json({ success: false, message: "Date must be DD/MM/YYYY" });
+      patch.date = d;
+    }
+
+    if (typeof patch.people !== "undefined") patch.people = Number(patch.people || 1);
+
+    const updated = await Registration.findByIdAndUpdate(id, patch, { new: true });
+    if (!updated) return res.status(404).json({ success: false, message: "Not found" });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (err) {
+    console.error("Update registration error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

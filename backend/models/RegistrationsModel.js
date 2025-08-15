@@ -16,7 +16,7 @@ const RegistrationSchema = new mongoose.Schema(
     // how many
     people: { type: Number, default: 1, min: 1 },
 
-    status: { type: String, enum: ["pending", "confirmed", "cancelled"], default: "pending" },
+    status: { type: String, enum: ["pending", "approved", "confirmed", "cancelled"], default: "pending" },
   },
   { timestamps: true }
 );

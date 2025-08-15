@@ -77,6 +77,7 @@ const RegisterModal = ({ isOpen, open, onClose, onSubmit, initial = {} }) => {
                   placeholder="Name"
                   className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm text-gray-800 placeholder-gray-400 mb-3"
                   required
+                  readOnly
                 />
                 <input
                   type="email"
@@ -85,6 +86,7 @@ const RegisterModal = ({ isOpen, open, onClose, onSubmit, initial = {} }) => {
                   placeholder="Email"
                   className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm text-gray-800 placeholder-gray-400 mb-3"
                   required
+                  readOnly
                 />
                 <input
                   name="phone"
