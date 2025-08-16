@@ -1,9 +1,14 @@
+// src/Components/Navbar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { FaRegUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePlaceStore } from "@/store/Place/place";
 import { useAuthStore } from "@/store/Auth/auth";
+import { signOut } from "firebase/auth";
+import { auth } from "@/Firebase";
 import logo from "../assets/logo.png";
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/g, "");
 
 const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile }) => {
   if (!searchQuery) return null;
@@ -21,7 +26,7 @@ const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile
               >
                 <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
                   <img
-                    src={`http://localhost:5000/uploads/${place.images?.[0]}`}
+                    src={`${API_BASE}/uploads/${place.images?.[0]}`}
                     alt={place.name}
                     className="w-full h-full object-cover"
                   />
@@ -39,20 +44,19 @@ const SearchResults = ({ searchQuery, searchResults, handleResultClick, isMobile
 };
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [profileOpen, setProfileOpen] = useState(false); // desktop dropdown
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false); // mobile collapsible
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
-  // Places search
   const { fetchPlaces, searchPlaces, searchResults, setSearchResults } = usePlaceStore();
-
-  // Auth
-  const { user, loadUserFromStorage, logout } = useAuthStore();
+  const { user, loadUserFromStorage, logout: logoutStore } = useAuthStore();
 
   useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
-  useEffect(() => { loadUserFromStorage(); }, [loadUserFromStorage]);
+  useEffect(() => { loadUserFromStorage?.(); }, [loadUserFromStorage]);
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -79,9 +83,39 @@ const Navbar = () => {
     setMenuOpen(false);
   };
 
-  const displayName =
-    user?.username ||
-    (user?.email ? user.email.split("@")[0] : null);
+  // Unified logout (desktop & mobile)
+  const handleLogout = async () => {
+    // close any open menus
+    setProfileOpen(false);
+    setMobileProfileOpen(false);
+    setMenuOpen(false);
+
+    try {
+      // 1) Firebase sign out (client)
+      await signOut(auth);
+    } catch {
+      // ignore
+    }
+
+    try {
+      // 2) Server session logout (clears httpOnly cookie)
+      await fetch(`${API_BASE}/api/users/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // ignore – even if the network fails we still clear local state
+    }
+
+    // 3) Clear local auth state (Zustand + localStorage)
+    logoutStore();
+
+    // 4) Redirect to login
+    navigate("/login", { replace: true });
+  };
+
+  const displayName = user?.username || (user?.email ? user.email.split("@")[0] : null);
+  const friendlyName = displayName || (user?.email ? user.email.split("@")[0] : "there");
 
   return (
     <nav className="absolute top-0 left-0 w-full z-[1000] bg-white/60 backdrop-blur-md text-black">
@@ -125,7 +159,7 @@ const Navbar = () => {
             />
           </div>
 
-          {/* Right side: Login OR Username + dropdown */}
+          {/* Right side: Login OR Profile */}
           {!user ? (
             <Link to="/login" className="nav-headings text-gray-800 font-medium hover:text-gray-700">
               Login
@@ -135,24 +169,30 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={() => setProfileOpen((o) => !o)}
-                className="nav-headings text-gray-800 font-medium hover:text-gray-700 flex items-center gap-2 max-w-[190px]"
+                className="nav-headings text-gray-800 font-medium hover:text-gray-700 flex items-center gap-2"
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
-                title={user.email}
+                aria-label="Open profile menu"
+                title="Profile"
               >
                 <FaRegUser className="text-lg" />
-                <span className="truncate">{displayName || "Profile"}</span>
               </button>
 
               {profileOpen && (
                 <div
                   role="menu"
                   aria-label="Profile menu"
-                  className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden z-[1100]"
+                  className="absolute right-0 mt-2 w-64 rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden z-[1100]"
                 >
-                  <div className="px-4 py-2 text-xs text-gray-500">
-                    Signed in as{" "}
-                    <span className="font-medium text-gray-700 break-all">{user.email}</span>
+                  <div className="px-4 py-3">
+                    <div className="text-sm">
+                      <span className="text-gray-500 font-normal">Hi </span>
+                      <span className="font-semibold text-gray-900">{friendlyName}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      Signed in as{" "}
+                      <span className="font-medium text-gray-700 break-all">{user.email}</span>
+                    </div>
                   </div>
                   <hr />
                   <Link
@@ -180,7 +220,7 @@ const Navbar = () => {
                     My Profile
                   </Link>
                   <button
-                    onClick={() => { logout(); setProfileOpen(false); }}
+                    onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     role="menuitem"
                   >
@@ -207,14 +247,10 @@ const Navbar = () => {
           <Link to="/places" className="text-black font-medium hover:text-emerald-950">Places</Link>
           <Link to="/about" className="text-black font-medium hover:text-emerald-950">About</Link>
 
-          {/* Login OR Username on mobile */}
           {!user ? (
             <Link to="/login" className="text-black font-medium hover:text-emerald-950">Login</Link>
           ) : (
             <>
-              <div className="text-black font-medium">{displayName || "Profile"}</div>
-
-              {/* Mobile Profile Collapsible */}
               <div className="border-t border-gray-200 pt-2">
                 <button
                   onClick={() => setMobileProfileOpen((o) => !o)}
@@ -228,6 +264,15 @@ const Navbar = () => {
 
                 {mobileProfileOpen && (
                   <div id="mobile-profile-menu" className="mt-2 pl-7 flex flex-col gap-2">
+                    <div className="text-sm">
+                      <span className="text-gray-500 font-normal">Hi </span>
+                      <span className="font-semibold text-gray-900">{friendlyName}</span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Signed in as{" "}
+                      <span className="font-medium text-gray-700 break-all">{user.email}</span>
+                    </div>
+                    <hr className="my-2" />
                     <Link
                       to="/favorites"
                       onClick={() => { setMobileProfileOpen(false); setMenuOpen(false); }}
@@ -250,7 +295,7 @@ const Navbar = () => {
                       My Profile
                     </Link>
                     <button
-                      onClick={() => { logout(); setMobileProfileOpen(false); setMenuOpen(false); }}
+                      onClick={handleLogout}
                       className="text-left text-sm text-red-600 hover:text-red-700"
                     >
                       Log out

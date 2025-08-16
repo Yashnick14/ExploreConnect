@@ -16,6 +16,7 @@ export const useForgotPasswordStore = create((set) => ({
       const res = await fetch("/api/users/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email }),
       });
 

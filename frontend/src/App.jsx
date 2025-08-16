@@ -19,6 +19,9 @@ import PlacePreview from "./Pages/User/PlacePreview";
 import GoogleTranslate from "./Components/GoogleTranslate";
 import RegistrationManagement from "./Pages/Admin/RegistrationManagement";
 import MyRegistrations from "@/Pages/User/Registrations";
+import Favorites from "./Pages/User/Favorites";
+
+
 
 function App() {
 
@@ -61,6 +64,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/registrations" element={<MyRegistrations />} />
           <Route path="/about" element={<About />} />
+          <Route path="/favorites" element={<Favorites />} />
         </Routes>
       </main>
 

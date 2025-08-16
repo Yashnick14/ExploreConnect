@@ -6,6 +6,9 @@ import {
   getRegistrationById,
   updateRegistration,
   deleteRegistration,
+  createEditRequest,
+  listEditRequests,
+  actOnEditRequest,
 } from "../controllers/RegistrationController.js";
 
 const router = express.Router();
@@ -13,13 +16,22 @@ const router = express.Router();
 // Create a registration
 router.post("/", createRegistration);
 
-// List registrations (optionally filter by place: ?place=<placeId>)
+// List registrations 
 router.get("/", listRegistrations);
+
+// user creates a pending edit request
+router.post("/:id/edit-requests", createEditRequest);
+
+// admin/user lists edit requests  
+router.get("/edit-requests", listEditRequests);
+
+// admin approves/rejects an edit request
+router.patch("/edit-requests/:rid", actOnEditRequest);
 
 // Get single registration
 router.get("/:id", getRegistrationById);
 
-// Update a registration
+// Update a registration (admin / system)
 router.patch("/:id", updateRegistration);
 
 // Delete a registration

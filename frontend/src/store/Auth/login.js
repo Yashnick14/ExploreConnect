@@ -4,6 +4,8 @@ import { auth } from "../../Firebase";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 
+axios.defaults.withCredentials = true; // send/receive session cookie
+
 export const useLoginStore = create((set) => ({
   loading: false,
 
@@ -11,17 +13,14 @@ export const useLoginStore = create((set) => ({
     set({ loading: true });
 
     try {
-      // Firebase login
+      // 1) Firebase sign-in → ID token
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
 
-      // Backend login
-      const res = await axios.post("/api/users/auth/firebase/login", {
-        idToken
-      });
+      // 2) Backend login -> sets session cookie
+      const res = await axios.post("/api/users/auth/firebase/login", { idToken });
 
       const user = res.data.user;
-
       set({ loading: false });
       toast.success("Logged in successfully");
 
@@ -33,10 +32,10 @@ export const useLoginStore = create((set) => ({
           fullName: user.fullName,
           username: user.username,
           phoneNumber: user.phoneNumber,
-          role: user.role, 
-        }
+          role: user.role,
+          status: user.status,
+        },
       };
-
     } catch (err) {
       set({ loading: false });
       console.error("❌ Login error:", err.response?.data || err.message);

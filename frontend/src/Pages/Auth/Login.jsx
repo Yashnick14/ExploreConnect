@@ -1,3 +1,4 @@
+// src/Pages/Auth/login.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -5,6 +6,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signInAnonymously,
+  signOut,
 } from "firebase/auth";
 import { auth } from "../../Firebase";
 import axios from "axios";
@@ -12,6 +14,8 @@ import { toast } from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
 import bgImage from "../../assets/login3.jpg";
 import { useAuthStore } from "@/store/Auth/auth";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const Login = () => {
   const navigate = useNavigate();
@@ -23,24 +27,26 @@ const Login = () => {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Call backend login, store user in zustand (and localStorage), route by role
+  // Call backend login, store user in zustand, route by role
   const authenticateUser = async (idToken, userInfo = null) => {
     try {
       const response = await axios.post(
-        import.meta.env.VITE_API_BASE_URL + "/api/users/auth/firebase/login",
-        { idToken }
+        `${API_BASE}/api/users/auth/firebase/login`,
+        { idToken },
+        { withCredentials: true } // allow server to set a session cookie
       );
 
       if (response.data.success) {
         const backendUser = response.data.user;
         const { role } = backendUser;
 
-        // Save globally so Navbar can display username
+        // Save globally so UI/Nav can read it
         setUser(backendUser);
 
         toast.success("Login successful");
-        if (role === "admin") navigate("/admin-dashboard");
-        else navigate("/home");
+        if (role === "admin") navigate("/admin-dashboard", { replace: true });
+        else navigate("/home", { replace: true });
+
         return backendUser;
       } else {
         toast.error(response.data.message || "Login failed");
@@ -49,18 +55,18 @@ const Login = () => {
     } catch (err) {
       const message = err?.response?.data?.message;
 
-      if (err.response?.status === 403 && message?.includes("deactivated")) {
+      if (err?.response?.status === 403 && message?.includes("deactivated")) {
         toast.error("Your account has been deactivated. Contact support.");
         return null;
       }
 
       // If not found on backend but Google returned user info, register then retry
-      if (err.response?.data?.message === "User not found" && userInfo !== null) {
+      if (err?.response?.data?.message === "User not found" && userInfo) {
         return await registerAndRetryLogin(idToken, userInfo);
-      } else {
-        toast.error(message || "Server error");
-        return null;
       }
+
+      toast.error(message || "Server error");
+      return null;
     }
   };
 
@@ -73,14 +79,13 @@ const Login = () => {
         phoneNumber: userInfo.phoneNumber || "N/A",
       };
 
-      await axios.post(
-        import.meta.env.VITE_API_BASE_URL + "/api/users/auth/firebase/register",
-        payload
-      );
+      await axios.post(`${API_BASE}/api/users/auth/firebase/register`, payload, {
+        withCredentials: true,
+      });
 
       return await authenticateUser(idToken);
     } catch (err) {
-      toast.error("Registration failed: " + err.message);
+      toast.error("Registration failed: " + (err?.message || "Unknown error"));
       return null;
     }
   };
@@ -101,7 +106,7 @@ const Login = () => {
 
       const idToken = await user.getIdToken();
       await authenticateUser(idToken);
-    } catch (err) {
+    } catch {
       toast.error("Email or password is incorrect.");
     } finally {
       setLoading(false);
@@ -117,24 +122,50 @@ const Login = () => {
       await authenticateUser(idToken, result.user);
     } catch (err) {
       if (
-        err.code === "auth/popup-closed-by-user" ||
-        err.code === "auth/cancelled-popup-request"
+        err?.code === "auth/popup-closed-by-user" ||
+        err?.code === "auth/cancelled-popup-request"
       ) {
         toast.error("Google login was cancelled.");
       } else {
-        toast.error("Google login failed: " + err.message);
+        toast.error("Google login failed: " + (err?.message || "Unknown error"));
       }
     }
   };
 
+  // Guest login should not inherit a previous user's state.
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
-      await signInAnonymously(auth);
+      // Ensure any existing Firebase user & backend session are cleared
+      try {
+        await signOut(auth);
+      } catch {}
+      try {
+        await axios.post(
+          `${API_BASE}/api/users/auth/logout`,
+          {},
+          { withCredentials: true }
+        );
+      } catch {}
+
+      // Sign in anonymously in Firebase (optional; used if you rely on Firebase state)
+      const result = await signInAnonymously(auth);
+
+      // Put a "guest" user into the app store (tab-scoped if your store uses sessionStorage)
+      setUser({
+        uid: result.user?.uid || "guest",
+        email: null,
+        fullName: "Guest",
+        username: "guest",
+        phoneNumber: "",
+        role: "guest",
+        status: "active",
+      });
+
       toast.success("Logged in as Guest");
-      navigate("/home");
+      navigate("/home", { replace: true });
     } catch (err) {
-      toast.error("Guest login failed: " + err.message);
+      toast.error("Guest login failed: " + (err?.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -203,7 +234,7 @@ const Login = () => {
             Google
           </button>
 
-          <button
+        <button
             onClick={handleGuestLogin}
             className="bg-black text-white border border-gray-300 py-2 px-4 rounded-lg font-medium w-1/2 hover:bg-gray-700 transition"
             disabled={loading}
@@ -214,10 +245,7 @@ const Login = () => {
 
         <p className="text-xs mt-6 text-left text-gray-700">
           CREATE NEW ACCOUNT?{" "}
-          <Link
-            to="/register"
-            className="underline text-black hover:text-blue-600"
-          >
+          <Link to="/register" className="underline text-black hover:text-blue-600">
             CLICK HERE
           </Link>
         </p>

@@ -2,27 +2,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import {
-  FiHeart,
-  FiUser,
-  FiMapPin,
-  FiMap,
-  FiTag,
-  FiPhone,
-  FiClock,
-} from "react-icons/fi";
+import { FiHeart, FiMapPin, FiMap, FiTag, FiPhone, FiClock } from "react-icons/fi";
 import { MdPets } from "react-icons/md";
 import { BsPatchCheckFill } from "react-icons/bs";
 import { AiFillStar } from "react-icons/ai";
+import { FaHeart } from "react-icons/fa";
 
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useAuthStore } from "@/store/Auth/auth";
 import { usePlaceStore } from "@/store/Place/place";
 import { useRegistrationStore } from "@/store/User/Registration";
+import { useFavoritesStore } from "@/store/User/Favorite"; 
 import RegisterModal from "@/Components/RegisterModal";
 import PlaceMap from "@/Components/PlaceMap";
 import WeatherWidget from "@/Components/WeatherWidget";
-import WeatherFX from "@/Components/WeatherFX"; // ✅ overlay (rain/sun)
+import WeatherFX from "@/Components/WeatherFX";
 
 /* ------------------ hours helpers ------------------ */
 const ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -49,6 +43,7 @@ const isOpenNow = (weekly) => {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   return nowMin >= (oh * 60 + om) && nowMin <= (ch * 60 + cm);
 };
+
 const DAYCODES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const todayCode = () => DAYCODES[new Date().getDay()];
 const nextOpenInfo = (weekly) => {
@@ -110,9 +105,10 @@ const parseDailyRangeFromString = (hoursStr) => {
 
 /* ---------------- dummy reviews data ---------------- */
 const reviewsData = [
-  { img: "https://readymadeui.com/team-2.webp", name: "Emily Carter", title: "Quick and Easy Experience", time: "2 days ago", text: "Everything was seamless. Ordering was simple and the response time was super fast. Highly recommend to anyone looking for convenience and speed." },
-  { img: "https://readymadeui.com/team-3.webp", name: "Daniel Kim", title: "Fantastic Support", time: "3 days ago", text: "Had a few questions before ordering and the customer service team was amazing—super responsive and knowledgeable. It really made a difference!" },
+  { img: "https://readymadeui.com/team-2.webp", name: "Daniel Kim", title: "Beautiful and Relaxing Spot", time: "2 days ago", text: "The place was stunning with a calm atmosphere. The views were breathtaking, and it felt like the perfect escape from the city. Definitely worth visiting!"},
+  { img: "https://readymadeui.com/team-3.webp", name: "Emily Carter", title: "Great Experience Overall", time: "3 days ago", text: "I really enjoyed my time here. The surroundings were clean, staff was friendly, and the facilities were well maintained. I’d recommend this place to friends and family!"},
 ];
+
 
 const PlacePreview = () => {
   const { id } = useParams();
@@ -120,11 +116,20 @@ const PlacePreview = () => {
   const { createRegistration } = useRegistrationStore();
   const { user, loadUserFromStorage } = useAuthStore();
 
+  // favorites store
+  const { favoriteIds, fetchFavorites, toggleFavorite } = useFavoritesStore();
+
   const [place, setPlace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hoursOpen, setHoursOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+
+  // derived isFav from store (no separate local truth)
+  const isFav = useMemo(
+    () => (place?._id ? favoriteIds.has(place._id) : false),
+    [favoriteIds, place?._id]
+  );
 
   useEffect(() => {
     loadUserFromStorage?.();
@@ -140,6 +145,13 @@ const PlacePreview = () => {
       setLoading(false);
     })();
   }, [id, getPlaceById]);
+
+  // Load favorites when we know the user (and not guest)
+  useEffect(() => {
+    if (user?.email && !isAnonymous) {
+      fetchFavorites(user.email);
+    }
+  }, [user?.email, isAnonymous, fetchFavorites]);
 
   // Prefill values for RegisterModal from logged-in user
   const initialRegValues = useMemo(() => ({
@@ -158,10 +170,23 @@ const PlacePreview = () => {
   const openNow = useMemo(() => isOpenNow(weekly), [weekly]);
 
   const handleOpenRegister = () => {
-    if (!user) return toast.error("Please register / sign in first.");
+    if (!user) return toast.error("Please sign in first.");
     if (isAnonymous) return toast.error("You’re currently signed in as a guest. Please register first.");
     if (user.status && user.status !== "active") return toast.error("Your account is not active.");
     setShowRegister(true);
+  };
+
+  const handleFavoriteClick = async () => {
+    if (!user) return toast.error("Please sign in first.");
+    if (isAnonymous) return toast.error("You’re currently signed in as a guest. Please register first.");
+    if (!place?._id) return;
+
+    const { success, message } = await toggleFavorite(user.email, place._id);
+    if (!success) {
+      toast.error(message || "Failed to update favorites");
+      return;
+    }
+    toast.success(favoriteIds.has(place._id) ? "Removed from favorites" : "Added to favorites");
   };
 
   const handleRegisterSubmit = async (payload) => {
@@ -174,7 +199,7 @@ const PlacePreview = () => {
 
     let openMin = null, closeMin = null;
     if (Array.isArray(weekly) && weekly.length === 7) {
-      const code = DAYCODES[userDate.getDay()];
+      const code = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][userDate.getDay()];
       const row = pickRow(weekly, code);
       if (!row?.isOpen) return toast.error(`Closed on ${LABEL[code]}.`);
       openMin = mmFromHHMM24(row.open); closeMin = mmFromHHMM24(row.close);
@@ -225,8 +250,7 @@ const PlacePreview = () => {
   const hasCoords = !isNaN(lat) && !isNaN(lng);
 
   return (
-    <div className="pt-[100px]">
-      {/* Weather-based overlay (rain or sun) shown briefly on load */}
+    <div className="pt-[100px] bg-gray-100">
       {hasCoords && (
         <WeatherFX
           lat={lat}
@@ -250,11 +274,25 @@ const PlacePreview = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">{place.name}</h1>
           <div className="flex items-center gap-3">
-            <button className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
-              <span className="text-lg">✏️</span> Review
-            </button>
-            <button className="inline-flex items-center gap-2 border rounded-full px-3 py-1 hover:bg-gray-50">
-              <FiHeart className="text-lg" />
+            {/* <button className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
+              <span className="text-medium">Review</span> 
+            </button> */}
+
+            {/* Favorites button (red fill when true) */}
+            <button
+              onClick={handleFavoriteClick}
+              aria-pressed={isFav}
+              className={`inline-flex items-center gap-2 rounded-sm px-3 py-1 border transition
+                ${isFav
+                  ? "bg-gray-100 border-gray-400 text-red-600"
+                  : "bg-gray-100 border-gray-400 text-gray-700 hover:text-gray-900"}`}
+              title={isFav ? "Remove from favorites" : "Add to favorites"}
+            >
+              {isFav ? (
+                <FaHeart className="text-xl" />
+              ) : (
+                <FiHeart className="text-xl" />
+              )}
             </button>
           </div>
         </div>
@@ -293,7 +331,7 @@ const PlacePreview = () => {
           </div>
         </section>
 
-        {/* Main grid: left content + sidebar */}
+        {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12">
           {/* LEFT */}
           <div className="lg:col-span-2 space-y-8">
@@ -314,7 +352,7 @@ const PlacePreview = () => {
               </div>
             </section>
 
-            {/* Map card */}
+            {/* Map */}
             {hasCoords && (
               <section>
                 <div className="px-6 pt-5">
@@ -346,7 +384,7 @@ const PlacePreview = () => {
                             <span className="w-4 h-4 flex items-center justify-center rounded-full bg-green-600/20">
                               <BsPatchCheckFill className="w-3 h-3 text-green-700" />
                             </span>
-                            <p className="text-xs text-gray-600">Verified Buyer</p>
+                            <p className="text-xs text-gray-600">Verified Traveller</p>
                           </div>
                         </div>
                       </div>
@@ -462,12 +500,12 @@ const PlacePreview = () => {
       {/* Register Modal (prefilled) */}
       {showRegister && (
         <RegisterModal
-          key={user?.email || "guest"}          // re-mount to refresh defaultValue when user changes
+          key={user?.email || "guest"}
           isOpen={showRegister}
           onClose={() => setShowRegister(false)}
           onSubmit={handleRegisterSubmit}
           placeName={place?.name}
-          initial={initialRegValues}            // ✅ prefill name/email/phone/people
+          initial={initialRegValues}
         />
       )}
     </div>

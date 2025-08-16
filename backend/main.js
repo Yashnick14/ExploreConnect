@@ -8,6 +8,9 @@ import placeRoutes from './routes/PlaceRoute.js';
 import authRoutes from './routes/AuthRoute.js';
 import adminRoutes from './routes/AdminRoute.js';
 import registrationRoutes from "./routes/RegistrationRoute.js";
+import favoritesRouter from "./routes/FavoriteRoute.js";
+
+
 
 dotenv.config();
 
@@ -50,6 +53,7 @@ app.use('/api/places', placeRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/favorites", favoritesRouter);
 
 // Frontend serve for production
 if (process.env.NODE_ENV === "production") {

@@ -9,7 +9,6 @@ export const useResetPasswordStore = create((set) => ({
       toast.error("All fields are required");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -21,6 +20,7 @@ export const useResetPasswordStore = create((set) => ({
       const res = await fetch("/api/users/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ token, newPassword }),
       });
 
@@ -28,7 +28,7 @@ export const useResetPasswordStore = create((set) => ({
       set({ loading: false });
 
       if (!data.success) {
-        toast.error(data.message);
+        toast.error(data.message || "Reset failed");
         return;
       }
 
