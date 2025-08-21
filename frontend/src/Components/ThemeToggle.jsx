@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useTheme } from "../Context/ThemeContext";
 
 const ThemeToggle = ({ className = "" }) => {
@@ -23,6 +24,10 @@ const ThemeToggle = ({ className = "" }) => {
       </span>
     </button>
   );
+};
+
+ThemeToggle.propTypes = {
+  className: PropTypes.string,
 };
 
 export default ThemeToggle;

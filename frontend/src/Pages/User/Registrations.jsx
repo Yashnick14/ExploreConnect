@@ -1,5 +1,6 @@
 // src/Pages/User/Registrations.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { toast, Toaster } from "react-hot-toast";
 
@@ -12,9 +13,12 @@ import RegisterModal from "@/Components/RegisterModal";
 const CancelConfirmModal = ({ onCancel, onConfirm, confirming = false }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
     <div className="bg-white shadow-xl rounded-2xl p-6 w-[360px] sm:w-[420px] border border-gray-200">
-      <h2 className="text-lg font-semibold text-gray-900">Cancel Registration</h2>
+      <h2 className="text-lg font-semibold text-gray-900">
+        Cancel Registration
+      </h2>
       <p className="text-sm text-gray-600 mt-1">
-        Are you sure you want to cancel this registration? This action cannot be undone.
+        Are you sure you want to cancel this registration? This action cannot be
+        undone.
       </p>
 
       <div className="flex items-center justify-end gap-3 mt-6">
@@ -39,6 +43,12 @@ const CancelConfirmModal = ({ onCancel, onConfirm, confirming = false }) => (
   </div>
 );
 
+CancelConfirmModal.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  confirming: PropTypes.bool,
+};
+
 /* ===== helpers ===== */
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/g, "");
 
@@ -46,7 +56,11 @@ const fmtDate = (v) => {
   if (!v) return "-";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
 };
 
 const toDDMMYYYY = (iso) => {
@@ -66,10 +80,16 @@ const StatusPill = ({ status }) => {
     cancelled: "bg-rose-100 text-rose-700",
   };
   return (
-    <span className={`px-2 py-1 rounded-sm text-xs font-medium ${map[status] || "bg-gray-100 text-gray-700"}`}>
+    <span
+      className={`px-2 py-1 rounded-sm text-xs font-medium ${map[status] || "bg-gray-100 text-gray-700"}`}
+    >
       {status || "pending"}
     </span>
   );
+};
+
+StatusPill.propTypes = {
+  status: PropTypes.string,
 };
 
 export default function Registrations() {
@@ -123,21 +143,23 @@ export default function Registrations() {
   const rows = useMemo(() => registrations || [], [registrations]);
 
   if (!user?.email) {
-      return (
-        <div className="px-6">
-          <div className="max-w-6xl mx-auto min-h-[70vh] grid place-content-center text-center">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">My Registrations</h1>
-              <p className="text-gray-600">Please log in to view your registrations.</p>
-            </div>
+    return (
+      <div className="px-6">
+        <div className="max-w-6xl mx-auto min-h-[70vh] grid place-content-center text-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">My Registrations</h1>
+            <p className="text-gray-600">
+              Please log in to view your registrations.
+            </p>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
   const resolveDisplay = (r) => {
-    let id = null,
-      pop = null;
+    let id = null;
+    let pop = null;
     if (typeof r.place === "string") id = r.place;
     else if (r.place && typeof r.place === "object") {
       id = r.place._id;
@@ -196,7 +218,9 @@ export default function Registrations() {
     if (!pendingCancel) return;
     try {
       setCancelling(true);
-      const res = await updateRegistration(pendingCancel._id, { status: "cancelled" });
+      const res = await updateRegistration(pendingCancel._id, {
+        status: "cancelled",
+      });
       if (res?.success) {
         toast.success("Registration cancelled");
         await fetchRegistrations({ email: user.email });
@@ -237,45 +261,72 @@ export default function Registrations() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="7" className="px-4 py-10 text-center text-gray-500">
+                <td
+                  colSpan="7"
+                  className="px-4 py-10 text-center text-gray-500"
+                >
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-4 py-10 text-center text-gray-500">
+                <td
+                  colSpan="7"
+                  className="px-4 py-10 text-center text-gray-500"
+                >
                   You don’t have any registrations yet.
                 </td>
               </tr>
             ) : (
               rows.map((r, idx) => {
                 const info = resolveDisplay(r);
-                const imgSrc = info.imageFile ? `${API_BASE}/uploads/${info.imageFile}` : null;
+                const imgSrc = info.imageFile
+                  ? `${API_BASE}/uploads/${info.imageFile}`
+                  : null;
                 const hasPendingEdit = !!r.pendingEdit;
 
                 // Edit only for pending/approved and no existing pending edit
-                const isEditableStatus = r.status === "pending" || r.status === "approved";
+                const isEditableStatus =
+                  r.status === "pending" || r.status === "approved";
                 const canEdit = isEditableStatus && !hasPendingEdit;
 
                 // Cancel only for pending/approved
-                const canCancel = r.status === "pending" || r.status === "approved";
+                const canCancel =
+                  r.status === "pending" || r.status === "approved";
 
                 return (
-                  <tr key={r._id} className="bg-white shadow-sm hover:shadow-md">
+                  <tr
+                    key={r._id}
+                    className="bg-white shadow-sm hover:shadow-md"
+                  >
                     <td className="px-4 py-3">{idx + 1}</td>
 
                     <td className="px-4 py-3">
-                      <Link to={info.id ? `/places/${info.id}` : "#"} className="flex items-center gap-3 group">
+                      <Link
+                        to={info.id ? `/places/${info.id}` : "#"}
+                        className="flex items-center gap-3 group"
+                      >
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
                           {imgSrc ? (
-                            <img src={imgSrc} alt={info.name} className="w-full h-full object-cover" loading="lazy" />
+                            <img
+                              src={imgSrc}
+                              alt={info.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
                           ) : (
                             <div className="w-full h-full bg-gray-200" />
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900 group-hover:underline">{info.name}</div>
-                          {info.district && <div className="text-xs text-gray-500">{info.district}</div>}
+                          <div className="font-medium text-gray-900 group-hover:underline">
+                            {info.name}
+                          </div>
+                          {info.district && (
+                            <div className="text-xs text-gray-500">
+                              {info.district}
+                            </div>
+                          )}
                         </div>
                       </Link>
                     </td>
@@ -316,8 +367,8 @@ export default function Registrations() {
                             hasPendingEdit
                               ? "Edit request already pending"
                               : isEditableStatus
-                              ? "Edit"
-                              : "Editing only allowed for Pending or Approved"
+                                ? "Edit"
+                                : "Editing only allowed for Pending or Approved"
                           }
                         >
                           Edit
@@ -365,7 +416,11 @@ export default function Registrations() {
 
       {/* Cancel Modal */}
       {pendingCancel && (
-        <CancelConfirmModal onCancel={() => setPendingCancel(null)} onConfirm={handleConfirmCancel} confirming={cancelling} />
+        <CancelConfirmModal
+          onCancel={() => setPendingCancel(null)}
+          onConfirm={handleConfirmCancel}
+          confirming={cancelling}
+        />
       )}
     </div>
   );

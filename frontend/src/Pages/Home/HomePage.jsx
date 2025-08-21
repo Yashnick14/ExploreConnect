@@ -68,9 +68,7 @@ const HomePage = () => {
                 <div className="animate-fade-in-up max-w-2xl w-full px-2 sm:px-6">
                   <h1
                     className={`hero-heading ${
-                      index === 0
-                        ? "text-center lg:text-center"
-                        : "text-center"
+                      index === 0 ? "text-center lg:text-center" : "text-center"
                     } text-4xl sm:text-5xl font-bold uppercase tracking-wider mb-4 leading-tight`}
                   >
                     {hero.heading}
@@ -144,7 +142,7 @@ const HomePage = () => {
         <div className="relative z-10 max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold mb-4">Interagency & Site Passes</h2>
           <p className="text-lg text-gray-100 mb-6">
-            Whether you're planning a single visit, coming back throughout the
+            Whether you are planning a single visit, coming back throughout the
             year, or traveling to multiple destinations, enjoy the convenience
             of purchasing a daily, weekly, seasonal, or annual pass to cover
             admissions, recreation, or amenity fees for your trips.

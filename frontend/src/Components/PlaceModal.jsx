@@ -1,7 +1,11 @@
 // src/Components/PlaceModal.jsx
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { IoCloudUploadOutline } from "react-icons/io5";
-import WorkingHoursModal, { DEFAULT_WEEKLY, makeCompactHours } from "./WorkingHoursModal";
+import WorkingHoursModal, {
+  DEFAULT_WEEKLY,
+  makeCompactHours,
+} from "./WorkingHoursModal";
 
 const PlaceModal = ({
   isEditMode,
@@ -23,7 +27,9 @@ const PlaceModal = ({
             : form.workingHoursWeekly;
         if (Array.isArray(parsed) && parsed.length === 7) return parsed;
       }
-    } catch {}
+    } catch (err) {
+      console.debug("Invalid workingHoursWeekly JSON", err);
+    }
     return DEFAULT_WEEKLY;
   });
 
@@ -37,8 +43,9 @@ const PlaceModal = ({
             : form.workingHoursWeekly;
         if (Array.isArray(parsed) && parsed.length === 7) setWeekly(parsed);
       }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    } catch (err) {
+      console.debug("Invalid workingHoursWeekly JSON", err);
+    }
   }, [form?.workingHoursWeekly]);
 
   useEffect(() => {
@@ -47,8 +54,7 @@ const PlaceModal = ({
     }
     // ensure removedIndexes exists for edit sessions
     setForm((prev) => ({ ...prev, removedIndexes: prev.removedIndexes ?? [] }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isEditMode, form.workingHours, setForm]);
 
   const openWeeklyModal = (e) => {
     e.preventDefault();
@@ -96,7 +102,8 @@ const PlaceModal = ({
                 const image = form.images?.[index];
                 let previewUrl = "";
                 if (image && typeof image === "string") previewUrl = image;
-                else if (image instanceof File) previewUrl = URL.createObjectURL(image);
+                else if (image instanceof File)
+                  previewUrl = URL.createObjectURL(image);
 
                 return (
                   <div key={index} className="relative">
@@ -113,14 +120,18 @@ const PlaceModal = ({
                       ) : (
                         <>
                           <IoCloudUploadOutline className="text-2xl text-gray-400" />
-                          <p className="text-[10px]">{index === 0 ? "Required" : "Optional"}</p>
+                          <p className="text-[10px]">
+                            {index === 0 ? "Required" : "Optional"}
+                          </p>
                         </>
                       )}
                       <input
                         id={`imageUpload${index}`}
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleImageChange(index, e.target.files[0])}
+                        onChange={(e) =>
+                          handleImageChange(index, e.target.files[0])
+                        }
                         className="hidden"
                       />
                     </label>
@@ -129,16 +140,22 @@ const PlaceModal = ({
                       <button
                         type="button"
                         onClick={() => {
-                          const count = (form.images || []).filter((img) => img !== null).length;
+                          const count = (form.images || []).filter(
+                            (img) => img !== null
+                          ).length;
                           if (count > 1) handleRemoveImage(index);
                           else alert("At least one image is required.");
                         }}
                         className={`absolute top-1 right-1 bg-white text-xs px-1 rounded shadow ${
-                          (form.images || []).filter((img) => img !== null).length <= 1
+                          (form.images || []).filter((img) => img !== null)
+                            .length <= 1
                             ? "text-gray-400 cursor-not-allowed"
                             : "text-red-600"
                         }`}
-                        disabled={(form.images || []).filter((img) => img !== null).length <= 1}
+                        disabled={
+                          (form.images || []).filter((img) => img !== null)
+                            .length <= 1
+                        }
                         aria-label={`Remove image ${index + 1}`}
                       >
                         ✕
@@ -285,10 +302,17 @@ const PlaceModal = ({
 
           {/* Buttons */}
           <div className="flex justify-center gap-4 mt-6">
-            <button type="submit" className="bg-black text-white px-6 py-2 rounded">
+            <button
+              type="submit"
+              className="bg-black text-white px-6 py-2 rounded"
+            >
               {isEditMode ? "Update" : "Add"}
             </button>
-            <button type="button" onClick={onCancel} className="border px-6 py-2 rounded">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="border px-6 py-2 rounded"
+            >
               Cancel
             </button>
           </div>
@@ -304,6 +328,34 @@ const PlaceModal = ({
       )}
     </div>
   );
+};
+
+/*PropTypes for validation */
+PlaceModal.propTypes = {
+  isEditMode: PropTypes.bool.isRequired,
+  form: PropTypes.shape({
+    images: PropTypes.array,
+    name: PropTypes.string,
+    workingHours: PropTypes.string,
+    workingHoursWeekly: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.array,
+    ]),
+    location: PropTypes.string,
+    description: PropTypes.string,
+    district: PropTypes.string,
+    category: PropTypes.string,
+    contactNumber: PropTypes.string,
+    lat: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    lng: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    petsAllowed: PropTypes.bool,
+    removedIndexes: PropTypes.array,
+  }).isRequired,
+  setForm: PropTypes.func.isRequired,
+  handleChange: PropTypes.func.isRequired,
+  handleImageChange: PropTypes.func.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
 };
 
 export default PlaceModal;

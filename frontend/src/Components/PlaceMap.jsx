@@ -1,6 +1,14 @@
 // src/Components/PlaceMap.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
+import PropTypes from "prop-types";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import DirectionsControl from "@/Components/DirectionsControl";
 import { toast } from "react-hot-toast";
@@ -11,19 +19,31 @@ try {
   // @ts-ignore
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png",
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png",
     iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
   });
-} catch {}
+} catch (err) {
+  console.debug("Leaflet marker asset init failed (non-fatal):", err);
+}
 
 function CenterOn({ position, zoom = 14 }) {
   const map = useMap();
   useEffect(() => {
-    if (position) map.flyTo([position.lat, position.lng], zoom, { duration: 0.7 });
+    if (position)
+      map.flyTo([position.lat, position.lng], zoom, { duration: 0.7 });
   }, [map, position, zoom]);
   return null;
 }
+
+CenterOn.propTypes = {
+  position: PropTypes.shape({
+    lat: PropTypes.number.isRequired,
+    lng: PropTypes.number.isRequired,
+  }),
+  zoom: PropTypes.number,
+};
 
 function ClickToSetOrigin({ enabled, onPick }) {
   useMapEvents({
@@ -36,8 +56,13 @@ function ClickToSetOrigin({ enabled, onPick }) {
   return null;
 }
 
+ClickToSetOrigin.propTypes = {
+  enabled: PropTypes.bool.isRequired,
+  onPick: PropTypes.func.isRequired,
+};
+
 export default function PlaceMap({
-  dest,                // { lat, lng }
+  dest, // { lat, lng }
   name,
   height = 300,
   zoom = 13,
@@ -56,16 +81,20 @@ export default function PlaceMap({
 
   useEffect(() => {
     return () => {
-      if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+      if (watchRef.current != null)
+        navigator.geolocation.clearWatch(watchRef.current);
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     };
   }, []);
 
   const errorToMessage = (err) => {
     if (!err) return "Unable to get your location";
-    if (err.code === 1) return "Location permission denied. Allow it in browser settings.";
-    if (err.code === 2) return "Position unavailable. Turn on GPS/Wi-Fi and try again.";
-    if (err.code === 3) return "Timed out getting location. Try again near a window/outdoors.";
+    if (err.code === 1)
+      return "Location permission denied. Allow it in browser settings.";
+    if (err.code === 2)
+      return "Position unavailable. Turn on GPS/Wi-Fi and try again.";
+    if (err.code === 3)
+      return "Timed out getting location. Try again near a window/outdoors.";
     return err.message || "Unable to get your location";
   };
 
@@ -88,7 +117,9 @@ export default function PlaceMap({
           return;
         }
       }
-    } catch {}
+    } catch (err) {
+      console.debug("permissions.query not available / failed:", err);
+    }
 
     setGettingLoc(true);
     setAccuracy(null);
@@ -127,7 +158,8 @@ export default function PlaceMap({
           const a = Math.round(acc);
           setAccuracy(a);
           if (a <= GOOD_ENOUGH) {
-            if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+            if (watchRef.current != null)
+              navigator.geolocation.clearWatch(watchRef.current);
             watchRef.current = null;
             if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
             stopTimerRef.current = null;
@@ -136,7 +168,8 @@ export default function PlaceMap({
         }
       },
       (err) => {
-        if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+        if (watchRef.current != null)
+          navigator.geolocation.clearWatch(watchRef.current);
         watchRef.current = null;
         if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
         stopTimerRef.current = null;
@@ -148,14 +181,16 @@ export default function PlaceMap({
 
     // Hard stop after 15s
     stopTimerRef.current = setTimeout(() => {
-      if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+      if (watchRef.current != null)
+        navigator.geolocation.clearWatch(watchRef.current);
       watchRef.current = null;
       setGettingLoc(false);
     }, 15000);
   };
 
   const clearDirections = () => {
-    if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+    if (watchRef.current != null)
+      navigator.geolocation.clearWatch(watchRef.current);
     watchRef.current = null;
     if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     stopTimerRef.current = null;
@@ -176,12 +211,14 @@ export default function PlaceMap({
 
   return (
     <div className={className}>
-
       <MapContainer
         center={[dest.lat, dest.lng]}
         zoom={zoom}
         scrollWheelZoom={scrollWheelZoom}
-        style={{ height: typeof height === "number" ? `${height}px` : height, width: "100%" }}
+        style={{
+          height: typeof height === "number" ? `${height}px` : height,
+          width: "100%",
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -213,9 +250,16 @@ export default function PlaceMap({
       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {/* Left side: small status text */}
         <div className="text-xs text-gray-600">
-          {pickMode && <span className="text-blue-700">Click the map to set your start point.</span>}
+          {pickMode && (
+            <span className="text-blue-700">
+              Click the map to set your start point.
+            </span>
+          )}
           {!pickMode && origin && accuracy != null && (
-            <>Current location accuracy: <span className="font-medium">±{accuracy} m</span></>
+            <>
+              Current location accuracy:{" "}
+              <span className="font-medium">±{accuracy} m</span>
+            </>
           )}
         </div>
 
@@ -250,3 +294,15 @@ export default function PlaceMap({
     </div>
   );
 }
+
+PlaceMap.propTypes = {
+  dest: PropTypes.shape({
+    lat: PropTypes.number.isRequired,
+    lng: PropTypes.number.isRequired,
+  }).isRequired,
+  name: PropTypes.string,
+  height: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  zoom: PropTypes.number,
+  className: PropTypes.string,
+  scrollWheelZoom: PropTypes.bool,
+};

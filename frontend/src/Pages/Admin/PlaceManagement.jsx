@@ -1,5 +1,6 @@
 // src/Pages/Admin/PlaceManagement.jsx
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { usePlaceStore } from "../../store/Place/place";
 import Sidebar from "../../Components/Sidebar";
 import { toast, ToastContainer } from "react-toastify";
@@ -36,12 +37,18 @@ function normalizeWeeklyForUI(arr) {
 const uploadURL = (file) =>
   file ? `http://localhost:5000/uploads/${file}` : null;
 
-// Delete confirm modal
+/* ---------- Delete confirm modal ---------- */
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
       <div className="flex items-center justify-center p-4 bg-red-100 rounded-full">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M2.875 5.75h1.917m0 0h15.333m-15.333 0v13.417a1.917 1.917 0 0 0 1.916 1.916h9.584a1.917 1.917 0 0 0 1.916-1.916V5.75m-10.541 0V3.833a1.917 1.917 0 0 1 1.916-1.916h3.834a1.917 1.917 0 0 1 1.916 1.916V5.75m-5.75 4.792v5.75m3.834-5.75v5.75"
             stroke="#DC2626"
@@ -51,9 +58,13 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
           />
         </svg>
       </div>
-      <h2 className="text-gray-900 font-semibold mt-4 text-xl">Are you sure?</h2>
+      <h2 className="text-gray-900 font-semibold mt-4 text-xl">
+        Are you sure?
+      </h2>
       <p className="text-sm text-gray-600 mt-2 text-center">
-        Do you really want to continue? This action<br/>cannot be undone.
+        Do you really want to continue? This action
+        <br />
+        cannot be undone.
       </p>
       <div className="flex items-center justify-center gap-4 mt-5 w-full">
         <button
@@ -75,9 +86,15 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
+DeleteConfirmModal.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+};
+
 const PlaceManagement = () => {
   const { places, fetchPlaces, createPlace, updatePlace, deletePlace } =
     usePlaceStore();
+
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingPlace, setEditingPlace] = useState(null);
@@ -194,7 +211,9 @@ const PlaceManagement = () => {
     const { success, message } = await action;
 
     if (success) {
-      toast.success(isEditMode ? "Place updated successfully" : "Place added successfully");
+      toast.success(
+        isEditMode ? "Place updated successfully" : "Place added successfully"
+      );
       fetchPlaces();
       setShowModal(false);
       setForm(defaultForm);
@@ -283,7 +302,6 @@ const PlaceManagement = () => {
               <tr>
                 <th className="px-4 py-3 text-left">Select</th>
                 <th className="px-4 py-3 text-left">ID</th>
-                {/* NEW: Image only */}
                 <th className="px-4 py-3 text-left">Image</th>
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">District</th>
@@ -303,20 +321,23 @@ const PlaceManagement = () => {
                 places.map((p, i) => {
                   const img = uploadURL(p.images?.[0]); // same as navbar
                   return (
-                    <tr key={p._id} className="bg-white shadow-sm hover:shadow-md">
+                    <tr
+                      key={p._id}
+                      className="bg-white shadow-sm hover:shadow-md"
+                    >
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
                           checked={selectedPlaceId === p._id}
                           onChange={() =>
-                            setSelectedPlaceId((s) => (s === p._id ? null : p._id))
+                            setSelectedPlaceId((s) =>
+                              s === p._id ? null : p._id
+                            )
                           }
                           className="h-4 w-4 text-blue-600"
                         />
                       </td>
                       <td className="px-4 py-3">{i + 1}</td>
-
-                      {/* Image ONLY */}
                       <td className="px-4 py-3">
                         <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border">
                           {img ? (
@@ -331,8 +352,6 @@ const PlaceManagement = () => {
                           )}
                         </div>
                       </td>
-
-                      {/* Keep other elements as they are */}
                       <td className="px-4 py-3">{p.name}</td>
                       <td className="px-4 py-3">{p.district}</td>
                       <td className="px-4 py-3">{p.category}</td>

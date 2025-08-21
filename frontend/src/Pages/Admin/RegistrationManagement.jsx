@@ -1,5 +1,6 @@
 // src/Pages/Admin/RegistrationManagement.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import Sidebar from "../../Components/Sidebar";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,7 +12,13 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
       <div className="flex items-center justify-center p-4 bg-red-100 rounded-full">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M2.875 5.75h1.917m0 0h15.333m-15.333 0v13.417a1.917 1.917 0 0 0 1.916 1.916h9.584a1.917 1.917 0 0 0 1.916-1.916V5.75m-10.541 0V3.833a1.917 1.917 0 0 1 1.916-1.916h3.834a1.917 1.917 0 0 1 1.916 1.916V5.75m-5.75 4.792v5.75m3.834-5.75v5.75"
             stroke="#DC2626"
@@ -21,7 +28,9 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
           />
         </svg>
       </div>
-      <h2 className="text-gray-900 font-semibold mt-4 text-xl">Are you sure?</h2>
+      <h2 className="text-gray-900 font-semibold mt-4 text-xl">
+        Are you sure?
+      </h2>
       <p className="text-sm text-gray-600 mt-2 text-center">
         Do you really want to continue? This action
         <br />
@@ -47,6 +56,11 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
+DeleteConfirmModal.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+};
+
 /* ---------- Edit Status Modal ---------- */
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -55,14 +69,23 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-const EditStatusModal = ({ currentStatus = "pending", onCancel, onSave, saving = false }) => {
+const EditStatusModal = ({
+  currentStatus = "pending",
+  onCancel,
+  onSave,
+  saving = false,
+}) => {
   const [status, setStatus] = useState(currentStatus || "pending");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
       <div className="bg-white shadow-md rounded-xl p-6 w-[360px] border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Edit Registration</h2>
-        <p className="text-sm text-gray-600 mt-1">Change the registration status.</p>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Edit Registration
+        </h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Change the registration status.
+        </p>
 
         <label className="block text-sm text-gray-700 mt-4 mb-1">Status</label>
         <select
@@ -101,8 +124,27 @@ const EditStatusModal = ({ currentStatus = "pending", onCancel, onSave, saving =
   );
 };
 
+EditStatusModal.propTypes = {
+  currentStatus: PropTypes.oneOf([
+    "pending",
+    "approved",
+    "completed",
+    "cancelled",
+  ]),
+  onCancel: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  saving: PropTypes.bool,
+};
+
 /* ---------- Approve/Reject Modal (for Edit Requests) ---------- */
-const ConfirmActionModal = ({ title, message, confirmLabel, onCancel, onConfirm, confirming = false }) => (
+const ConfirmActionModal = ({
+  title,
+  message,
+  confirmLabel,
+  onCancel,
+  onConfirm,
+  confirming = false,
+}) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="bg-white shadow-md rounded-xl p-6 w-[380px] border border-gray-200">
       <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
@@ -129,11 +171,20 @@ const ConfirmActionModal = ({ title, message, confirmLabel, onCancel, onConfirm,
   </div>
 );
 
+ConfirmActionModal.propTypes = {
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  confirmLabel: PropTypes.string.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  confirming: PropTypes.bool,
+};
+
 /* ---------- helpers ---------- */
 const formatDate = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso);
-  if (isNaN(d)) return "—";
+  if (Number.isNaN(d.getTime())) return "—";
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
@@ -152,8 +203,12 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/g, "");
 
 /* ---------- Page ---------- */
 const RegistrationManagement = () => {
-  const { registrations, fetchRegistrations, deleteRegistration, updateRegistration } =
-    useRegistrationStore();
+  const {
+    registrations,
+    fetchRegistrations,
+    deleteRegistration,
+    updateRegistration,
+  } = useRegistrationStore();
 
   // view toggle
   const [view, setView] = useState("registrations"); // 'registrations' | 'editRequests'
@@ -190,11 +245,13 @@ const RegistrationManagement = () => {
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
           const map = {};
-          data.data.forEach((p) => (map[p._id] = p.name || p.title || "—"));
+          data.data.forEach((p) => {
+            map[p._id] = p.name || p.title || "—";
+          });
           setPlaceMap(map);
         }
-      } catch (e) {
-        console.warn("Could not load places for name mapping:", e?.message);
+      } catch (err) {
+        console.warn("Could not load places for name mapping:", err?.message);
       }
     };
     loadPlaces();
@@ -203,7 +260,10 @@ const RegistrationManagement = () => {
   // ---- Badge: pending count loader ----
   const loadPendingCount = async () => {
     try {
-      const u = new URL(`${API_BASE}/api/registrations/edit-requests`, window.location.origin);
+      const u = new URL(
+        `${API_BASE}/api/registrations/edit-requests`,
+        window.location.origin
+      );
       u.searchParams.set("status", "pending");
       const res = await fetch(u.toString().replace(window.location.origin, ""));
       const data = await res.json();
@@ -226,8 +286,9 @@ const RegistrationManagement = () => {
     tick();
     const id = setInterval(tick, 15000);
     const onFocus = () => tick();
-    const onVisible = () =>
-      document.visibilityState === "visible" && tick();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
@@ -242,7 +303,10 @@ const RegistrationManagement = () => {
   const fetchEditRequests = async (status = "pending") => {
     setLoadingEdits(true);
     try {
-      const u = new URL(`${API_BASE}/api/registrations/edit-requests`, window.location.origin);
+      const u = new URL(
+        `${API_BASE}/api/registrations/edit-requests`,
+        window.location.origin
+      );
       if (status) u.searchParams.set("status", status);
       const res = await fetch(u.toString().replace(window.location.origin, ""));
       const data = await res.json();
@@ -253,8 +317,8 @@ const RegistrationManagement = () => {
         setEditRequests([]);
         toast.error(data?.message || "Failed to load edit requests");
       }
-    } catch (e) {
-      console.error("load edit-requests error:", e);
+    } catch (err) {
+      console.error("load edit-requests error:", err);
       toast.error("Failed to load edit requests");
       setEditRequests([]);
     } finally {
@@ -316,22 +380,25 @@ const RegistrationManagement = () => {
     if (!selectedReqId) return;
     setActing(true);
     try {
-      const res = await fetch(`${API_BASE}/api/registrations/edit-requests/${selectedReqId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/registrations/edit-requests/${selectedReqId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        }
+      );
       const data = await res.json();
       if (!data?.success) {
         toast.error(data?.message || `Failed to ${action}`);
       } else {
         toast.success(`Edit ${action}d`);
         await fetchEditRequests("pending"); // refresh the list
-        await fetchRegistrations({});       // keep main list in sync
-        await loadPendingCount();           // update badge in case it changed
+        await fetchRegistrations({}); // keep main list in sync
+        await loadPendingCount(); // update badge
         setSelectedReqId(null);
       }
-    } catch (e) {
+    } catch {
       toast.error(`Failed to ${action}`);
     } finally {
       setActing(false);
@@ -353,7 +420,9 @@ const RegistrationManagement = () => {
       </div>
 
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${isSidebarOpen ? "block" : "hidden"}`}>
+      <div
+        className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${isSidebarOpen ? "block" : "hidden"}`}
+      >
         <Sidebar />
       </div>
 
@@ -373,7 +442,9 @@ const RegistrationManagement = () => {
               <button
                 onClick={() => setView("registrations")}
                 className={`px-4 py-2 rounded text-white ${
-                  view === "registrations" ? "bg-black" : "bg-black hover:bg-gray-600"
+                  view === "registrations"
+                    ? "bg-black"
+                    : "bg-black hover:bg-gray-600"
                 }`}
               >
                 Registrations
@@ -382,7 +453,9 @@ const RegistrationManagement = () => {
               <button
                 onClick={() => setView("editRequests")}
                 className={`relative inline-flex items-center justify-center px-4 py-2 rounded text-white ${
-                  view === "editRequests" ? "bg-black" : "bg-black hover:bg-gray-600"
+                  view === "editRequests"
+                    ? "bg-black"
+                    : "bg-black hover:bg-gray-600"
                 }`}
               >
                 Edit Requests
@@ -406,7 +479,9 @@ const RegistrationManagement = () => {
                   onClick={() => setShowEditModal(true)}
                   disabled={!selectedId}
                   className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                    !selectedId ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
+                    !selectedId
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-black hover:bg-gray-800"
                   }`}
                   title={!selectedId ? "Select a registration" : "Edit status"}
                 >
@@ -416,7 +491,9 @@ const RegistrationManagement = () => {
                   onClick={() => setShowDeleteModal(true)}
                   disabled={!selectedId}
                   className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                    !selectedId ? "bg-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                    !selectedId
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
                   }`}
                 >
                   DELETE
@@ -428,7 +505,9 @@ const RegistrationManagement = () => {
                   onClick={() => setModalApprove(true)}
                   disabled={!selectedReqId}
                   className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                    !selectedReqId ? "bg-gray-400 cursor-not-allowed" : "bg-green-700 hover:bg-green-800"
+                    !selectedReqId
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-700 hover:bg-green-800"
                   }`}
                 >
                   Approve
@@ -437,7 +516,9 @@ const RegistrationManagement = () => {
                   onClick={() => setModalReject(true)}
                   disabled={!selectedReqId}
                   className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
-                    !selectedReqId ? "bg-gray-400 cursor-not-allowed" : "bg-red-700 hover:bg-red-800"
+                    !selectedReqId
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-700 hover:bg-red-800"
                   }`}
                 >
                   Reject
@@ -472,25 +553,36 @@ const RegistrationManagement = () => {
                   </tr>
                 ) : (
                   rows.map((r, idx) => (
-                    <tr key={r._id} className="bg-white shadow-sm hover:shadow-md">
+                    <tr
+                      key={r._id}
+                      className="bg-white shadow-sm hover:shadow-md"
+                    >
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
                           checked={selectedId === r._id}
-                          onChange={() => setSelectedId(selectedId === r._id ? null : r._id)}
+                          onChange={() =>
+                            setSelectedId(selectedId === r._id ? null : r._id)
+                          }
                           className="h-4 w-4 text-blue-600"
                         />
                       </td>
                       <td className="px-4 py-3">{idx + 1}</td>
                       <td className="px-4 py-3">{r.name}</td>
                       <td className="px-4 py-3">
-                        {r.place?.name || placeMap[r.place] || placeMap[r.place?._id] || r.place || "—"}
+                        {r.place?.name ||
+                          placeMap[r.place] ||
+                          placeMap[r.place?._id] ||
+                          r.place ||
+                          "—"}
                       </td>
                       <td className="px-4 py-3">{formatDate(r.date)}</td>
                       <td className="px-4 py-3">{r.time || "—"}</td>
                       <td className="px-4 py-3">{r.people ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${statusChip(r.status)}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${statusChip(r.status)}`}
+                        >
                           {r.status || "pending"}
                         </span>
                       </td>
@@ -538,7 +630,12 @@ const RegistrationManagement = () => {
                       reg.place ||
                       "—";
 
-                    const currentStr = [formatDate(reg.date), reg.time, reg.people ? `${reg.people}p` : "", reg.phone]
+                    const currentStr = [
+                      formatDate(reg.date),
+                      reg.time,
+                      reg.people ? `${reg.people}p` : "",
+                      reg.phone,
+                    ]
                       .filter(Boolean)
                       .join(" • ");
 
@@ -546,36 +643,57 @@ const RegistrationManagement = () => {
                     const requestedStr = [
                       patch.date || formatDate(reg.date),
                       patch.time || reg.time,
-                      patch.people ? `${patch.people}p` : reg.people ? `${reg.people}p` : "",
+                      patch.people
+                        ? `${patch.people}p`
+                        : reg.people
+                          ? `${reg.people}p`
+                          : "",
                       patch.phone || reg.phone,
                     ]
                       .filter(Boolean)
                       .join(" • ");
 
                     return (
-                      <tr key={er._id} className="bg-white shadow-sm hover:shadow-md">
+                      <tr
+                        key={er._id}
+                        className="bg-white shadow-sm hover:shadow-md"
+                      >
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
                             checked={selectedReqId === er._id}
-                            onChange={() => setSelectedReqId(selectedReqId === er._id ? null : er._id)}
+                            onChange={() =>
+                              setSelectedReqId(
+                                selectedReqId === er._id ? null : er._id
+                              )
+                            }
                             className="h-4 w-4 text-blue-600"
                           />
                         </td>
                         <td className="px-4 py-3">{idx + 1}</td>
                         <td className="px-4 py-3">
-                          <div className="text-sm text-gray-900">{reg.name || "—"}</div>
-                          <div className="text-xs text-gray-600">{reg.email || "—"}</div>
+                          <div className="text-sm text-gray-900">
+                            {reg.name || "—"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {reg.email || "—"}
+                          </div>
                         </td>
                         <td className="px-4 py-3">{placeName}</td>
                         <td className="px-4 py-3">{currentStr || "—"}</td>
-                        <td className="px-4 py-3 font-medium">{requestedStr || "—"}</td>
+                        <td className="px-4 py-3 font-medium">
+                          {requestedStr || "—"}
+                        </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${statusChip(er.status)}`}>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${statusChip(er.status)}`}
+                          >
                             {er.status || "pending"}
                           </span>
                         </td>
-                        <td className="px-4 py-3">{formatDate(er.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          {formatDate(er.createdAt)}
+                        </td>
                       </tr>
                     );
                   })
@@ -586,7 +704,10 @@ const RegistrationManagement = () => {
         )}
 
         {showDeleteModal && (
-          <DeleteConfirmModal onCancel={() => setShowDeleteModal(false)} onConfirm={handleDelete} />
+          <DeleteConfirmModal
+            onCancel={() => setShowDeleteModal(false)}
+            onConfirm={handleDelete}
+          />
         )}
 
         {showEditModal && selectedRow && view === "registrations" && (

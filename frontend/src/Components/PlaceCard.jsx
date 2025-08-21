@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { HiStar } from "react-icons/hi2";
 import { HiOutlineLocationMarker } from "react-icons/hi";
@@ -55,6 +56,17 @@ const PlaceCard = ({ place }) => {
       </div>
     </Link>
   );
+};
+
+PlaceCard.propTypes = {
+  place: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    district: PropTypes.string.isRequired,
+    workingHours: PropTypes.string,
+    petsAllowed: PropTypes.bool,
+    images: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
 };
 
 export default PlaceCard;

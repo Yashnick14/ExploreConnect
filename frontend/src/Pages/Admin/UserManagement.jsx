@@ -1,4 +1,6 @@
+// src/Pages/Admin/UserManagement.jsx
 import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import Sidebar from "../../Components/Sidebar";
 import { useUserStore } from "../../store/User/user";
 import { toast, ToastContainer } from "react-toastify";
@@ -19,9 +21,13 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
           />
         </svg>
       </div>
-      <h2 className="text-gray-900 font-semibold mt-4 text-xl">Are you sure?</h2>
+      <h2 className="text-gray-900 font-semibold mt-4 text-xl">
+        Are you sure?
+      </h2>
       <p className="text-sm text-gray-600 mt-2 text-center">
-        Do you really want to continue? This action<br />cannot be undone.
+        Do you really want to continue? This action
+        <br />
+        cannot be undone.
       </p>
       <div className="flex items-center justify-center gap-4 mt-5 w-full">
         <button
@@ -43,6 +49,11 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
+DeleteConfirmModal.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+};
+
 const UserManagement = () => {
   const { users, fetchUsers, toggleStatus, deleteUser } = useUserStore();
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -51,7 +62,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleToggleStatus = async () => {
     if (!selectedUserId) return;
@@ -94,7 +105,9 @@ const UserManagement = () => {
       </div>
 
       {/* Sidebar */}
-      <div className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${isSidebarOpen ? "block" : "hidden"}`}>
+      <div
+        className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${isSidebarOpen ? "block" : "hidden"}`}
+      >
         <Sidebar />
       </div>
 

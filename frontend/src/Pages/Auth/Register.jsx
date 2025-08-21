@@ -1,14 +1,12 @@
+// src/Pages/Auth/Register.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { getAuth } from "firebase/auth";
-import { useRegisterStore } from "../../store/Auth/register"; // your zustand store path
+import { useRegisterStore } from "../../store/Auth/register"; // zustand store path
 import bgImage from "../../assets/login3.jpg";
 import { toast } from "react-hot-toast";
 
-
 const Register = () => {
   const navigate = useNavigate();
-  const auth = getAuth();
   const { registerUser, loading } = useRegisterStore();
 
   const [formData, setFormData] = useState({
@@ -27,7 +25,14 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { fullName, username, phoneNumber, email, password, confirmPassword } = formData;
+    const {
+      fullName,
+      username,
+      phoneNumber,
+      email,
+      password,
+      confirmPassword,
+    } = formData;
 
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
@@ -44,12 +49,10 @@ const Register = () => {
     });
 
     if (result.success) {
-      toast.success(
-        "Registration successful! You can now login."
-      );
+      toast.success("Registration successful! You can now login.");
       setTimeout(() => {
         navigate("/login");
-      }, 2000); // Give user 3 seconds to read message
+      }, 2000);
     }
   };
 
@@ -59,7 +62,9 @@ const Register = () => {
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       <div className="bg-white/90 p-10 rounded-2xl max-w-md w-full text-center shadow-xl">
-        <h2 className="mb-6 text-2xl font-bold text-gray-900">CREATE ACCOUNT</h2>
+        <h2 className="mb-6 text-2xl font-bold text-gray-900">
+          CREATE ACCOUNT
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <input
@@ -115,7 +120,9 @@ const Register = () => {
             type="submit"
             disabled={loading}
             className={`w-full py-3 text-white font-semibold text-base rounded-md ${
-              loading ? "bg-gray-500 cursor-not-allowed" : "bg-black hover:bg-gray-900"
+              loading
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-black hover:bg-gray-900"
             } transition-transform`}
           >
             {loading ? "Registering..." : "REGISTER"}
@@ -124,7 +131,10 @@ const Register = () => {
 
         <p className="text-xs mt-6 text-left text-gray-700">
           ALREADY HAVE AN ACCOUNT?{" "}
-          <Link to="/login" className="underline text-black hover:text-blue-600">
+          <Link
+            to="/login"
+            className="underline text-black hover:text-blue-600"
+          >
             LOGIN HERE
           </Link>
         </p>

@@ -1,5 +1,6 @@
 // src/Components/WeatherFX.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 
 /* ---- WMO helpers ---- */
 const isRainyCode = (c) =>
@@ -15,7 +16,7 @@ export default function WeatherFX({
   lookaheadHours = 3,
   probThreshold = 50,
   amountThreshold = 0.1,
-  forceEffect = null,              // "rain" | "sun" (testing)
+  forceEffect = null, // "rain" | "sun" (testing)
   debug = false,
   className = "",
   // Rain look
@@ -25,12 +26,16 @@ export default function WeatherFX({
   // Sun beams (the only sunny effect now)
   sunBeamCount = 32,
   sunBeamIntensity = 1.25,
-  sunBeamsAngle = -8,              // degrees
-  sunWarmWash = 0.12,              // 0..1 background warmth
+  sunBeamsAngle = -8, // degrees
+  sunWarmWash = 0.12, // 0..1 background warmth
   // (kept for compatibility, but ignored unless you set sunShowCore=true)
   sunSize = 160,
   sunCornerInset = 24,
-  sunShowCore = false,             // ⬅️ default OFF: no sun disk, only beams
+  sunShowCore = false, // default OFF: no sun disk, only beams
+  // NEW: treat dry overcast as sunny
+  sunOnOvercastIfDry = true,
+  // NEW: timezone (keep "auto" or set "Asia/Colombo" to match widget)
+  timezone = "auto",
 }) {
   const [effect, setEffect] = useState(null); // "rain" | "sun" | null
   const [isThunder, setIsThunder] = useState(false);
@@ -53,12 +58,15 @@ export default function WeatherFX({
     const url = new URL("https://api.open-meteo.com/v1/forecast");
     url.searchParams.set("latitude", lat);
     url.searchParams.set("longitude", lng);
-    url.searchParams.set("current", "weather_code,precipitation");
+    url.searchParams.set(
+      "current",
+      "weather_code,precipitation,temperature_2m"
+    );
     url.searchParams.set(
       "hourly",
       "precipitation,precipitation_probability,weather_code"
     );
-    url.searchParams.set("timezone", "auto");
+    url.searchParams.set("timezone", timezone);
     url.searchParams.set("forecast_days", "1");
 
     fetch(url.toString(), { signal: controller.signal })
@@ -68,41 +76,77 @@ export default function WeatherFX({
         const precipNow = Number(data?.current?.precipitation ?? 0);
         if (Number.isNaN(code)) return;
 
+        const times = data?.hourly?.time || [];
+        const probs = data?.hourly?.precipitation_probability || [];
+        const amnts = data?.hourly?.precipitation || [];
+        const wcodes = data?.hourly?.weather_code || [];
+
         const rainyNow = isRainyCode(code) || precipNow > 0.05;
         const thunderNow = code >= 95 && code <= 99;
 
-        let soonRain = false;
-        if (!rainyNow && isOvercast(code)) {
-          const times = data?.hourly?.time || [];
-          const probs = data?.hourly?.precipitation_probability || [];
-          const amnts = data?.hourly?.precipitation || [];
-          const wcodes = data?.hourly?.weather_code || [];
+        // Find the start index for "next hours"
+        const now = new Date();
+        let idx = times.findIndex((t) => new Date(t) >= now);
+        if (idx < 0) idx = times.length - 1;
+        const end = Math.min(
+          idx + Math.max(1, lookaheadHours),
+          times.length - 1
+        );
 
-          const now = new Date();
-          let idx = times.findIndex((t) => new Date(t) >= now);
-          if (idx < 0) idx = times.length - 1;
-
-          const end = Math.min(idx + lookaheadHours, times.length - 1);
-          for (let i = idx; i <= end; i++) {
-            const p = Number(probs?.[i] ?? 0);
-            const a = Number(amnts?.[i] ?? 0);
-            const wc = Number(wcodes?.[i] ?? NaN);
-            if (p >= probThreshold || a >= amountThreshold || isRainyCode(wc)) {
-              soonRain = true;
-              break;
-            }
-          }
-          if (debug) console.log("[WeatherFX] overcast → soonRain?", { idx, end, soonRain });
+        // Compute maxima in that window; resilient to missing probability values
+        let maxProb = 0,
+          maxAmt = 0,
+          rainCodeSeen = false;
+        for (let i = idx; i <= end; i++) {
+          const p = Number(probs?.[i] ?? 0) || 0;
+          const a = Number(amnts?.[i] ?? 0) || 0;
+          const wc = Number(wcodes?.[i] ?? NaN);
+          if (p > maxProb) maxProb = p;
+          if (a > maxAmt) maxAmt = a;
+          if (isRainyCode(wc)) rainCodeSeen = true;
         }
+        // Treat tiny noise as zero
+        if (maxAmt < 0.01) maxAmt = 0;
 
-        if (rainyNow || soonRain) {
+        if (debug)
+          console.log("[WeatherFX]", {
+            code,
+            precipNow,
+            idx,
+            end,
+            maxProb,
+            maxAmt,
+            rainCodeSeen,
+          });
+
+        // 1) Immediate rain or imminent rain under overcast
+        if (
+          rainyNow ||
+          (isOvercast(code) &&
+            (rainCodeSeen ||
+              maxProb >= probThreshold ||
+              maxAmt >= amountThreshold))
+        ) {
           setIsThunder(thunderNow);
           setEffect("rain");
           setTimeout(() => setEffect(null), duration);
           return;
         }
 
+        // 2) Clear / mostly clear → sun
         if (isSunnyCode(code)) {
+          setEffect("sun");
+          setTimeout(() => setEffect(null), duration);
+          return;
+        }
+
+        // 3) Overcast but DRY soon → optionally show sun beams
+        if (
+          isOvercast(code) &&
+          sunOnOvercastIfDry &&
+          maxProb < probThreshold &&
+          maxAmt < amountThreshold
+        ) {
           setEffect("sun");
           setTimeout(() => setEffect(null), duration);
           return;
@@ -114,39 +158,23 @@ export default function WeatherFX({
 
     return () => controller.abort();
   }, [
-    lat, lng, duration, lookaheadHours, probThreshold, amountThreshold,
-    reducedMotion, forceEffect, debug,
+    lat,
+    lng,
+    duration,
+    lookaheadHours,
+    probThreshold,
+    amountThreshold,
+    reducedMotion,
+    forceEffect,
+    debug,
+    timezone,
+    sunOnOvercastIfDry,
   ]);
 
   if (!effect) return null;
 
   return (
     <>
-      <style>{`
-        /* Rain */
-        @keyframes rainFall {
-          0%   { transform: translate3d(0,-110vh,0); opacity: 0; }
-          10%  { opacity: 1; }
-          100% { transform: translate3d(0,110vh,0); opacity: 0.25; }
-        }
-        @keyframes lightning {
-          0%, 14%, 100% { opacity: 0; }
-          15% { opacity: 0.75; }
-          17% { opacity: 0; }
-          22% { opacity: 0.6; }
-          24% { opacity: 0; }
-        }
-
-        /* Sun / drifting beams */
-        @keyframes beamDrift {
-          0%   { transform: translate3d(0,-20vh,0) rotate(10deg); opacity: 0; }
-          12%  { opacity: .45; }
-          100% { transform: translate3d(0,120vh,0) rotate(10deg); opacity: 0; }
-        }
-        @keyframes sunPulse { 0%,100% { transform: scale(1); opacity: .95 } 50% { transform: scale(1.06); opacity: 1 } }
-        @keyframes ringBurst { 0% { transform: scale(.6); opacity: .7 } 100% { transform: scale(1.35); opacity: 0 } }
-      `}</style>
-
       {effect === "rain" ? (
         <RainOverlay
           maxDrops={maxDrops}
@@ -199,12 +227,18 @@ function RainOverlay({
   const veil = `rgba(0,0,0,${Math.min(Math.max(darken, 0), 0.9)})`;
 
   return (
-    <div className={`fixed inset-0 z-[9999] pointer-events-none ${className}`} aria-hidden="true">
+    <div
+      className={`fixed inset-0 z-[9999] pointer-events-none ${className}`}
+      aria-hidden="true"
+    >
       <div className="absolute inset-0" style={{ background: veil }} />
       {vignette && (
         <div
           className="absolute inset-0"
-          style={{ boxShadow: "inset 0 0 200px rgba(0,0,0,0.35), inset 0 0 420px rgba(0,0,0,0.25)" }}
+          style={{
+            boxShadow:
+              "inset 0 0 200px rgba(0,0,0,0.35), inset 0 0 420px rgba(0,0,0,0.25)",
+          }}
         />
       )}
       <div className="absolute inset-0" style={{ transform: "rotate(10deg)" }}>
@@ -238,7 +272,10 @@ function RainOverlay({
         />
       )}
       {isThunder && (
-        <div className="absolute inset-0 bg-white" style={{ animation: "lightning 2.2s ease-in-out infinite" }} />
+        <div
+          className="absolute inset-0 bg-white"
+          style={{ animation: "lightning 2.2s ease-in-out infinite" }}
+        />
       )}
     </div>
   );
@@ -277,7 +314,10 @@ function SunBeamsOverlay({
   }, [beamCount, beamIntensity]);
 
   return (
-    <div className={`fixed inset-0 z-[9999] pointer-events-none ${className}`} aria-hidden="true">
+    <div
+      className={`fixed inset-0 z-[9999] pointer-events-none ${className}`}
+      aria-hidden="true"
+    >
       {/* subtle warm wash over the page */}
       <div
         className="absolute inset-0"
@@ -285,7 +325,10 @@ function SunBeamsOverlay({
       />
 
       {/* drifting sunshine streaks only */}
-      <div className="absolute inset-0" style={{ transform: `rotate(${angle}deg)` }}>
+      <div
+        className="absolute inset-0"
+        style={{ transform: `rotate(${angle}deg)` }}
+      >
         {beams.map((b) => (
           <span
             key={b.i}
@@ -298,7 +341,8 @@ function SunBeamsOverlay({
               borderRadius: 999,
               background:
                 "linear-gradient(to bottom, rgba(255,255,240,0), rgba(255,255,230,0.95), rgba(255,255,240,0))",
-              boxShadow: "0 0 18px rgba(255,235,150,0.55), 0 0 36px rgba(255,235,150,0.35)",
+              boxShadow:
+                "0 0 18px rgba(255,235,150,0.55), 0 0 36px rgba(255,235,150,0.35)",
               opacity: b.opacity,
               filter: "blur(0.5px)",
               mixBlendMode: "screen",
@@ -312,7 +356,12 @@ function SunBeamsOverlay({
       {showCore && (
         <div
           className="absolute"
-          style={{ top: `-${coreInset}px`, right: `-${coreInset}px`, width: `${coreSize}px`, height: `${coreSize}px` }}
+          style={{
+            top: `-${coreInset}px`,
+            right: `-${coreInset}px`,
+            width: `${coreSize}px`,
+            height: `${coreSize}px`,
+          }}
         >
           <div className="relative w-full h-full">
             <div
@@ -320,17 +369,24 @@ function SunBeamsOverlay({
               style={{
                 background:
                   "radial-gradient(circle at 40% 40%, rgba(255,235,140,1), rgba(255,205,0,0.95) 60%, rgba(255,205,0,0.6) 78%, rgba(255,205,0,0) 100%)",
-                boxShadow: "0 0 22px rgba(255,210,0,0.6), 0 0 66px rgba(255,210,0,0.45)",
+                boxShadow:
+                  "0 0 22px rgba(255,210,0,0.6), 0 0 66px rgba(255,210,0,0.45)",
                 animation: "sunPulse 1.6s ease-in-out infinite",
               }}
             />
             <span
               className="absolute inset-0 rounded-full"
-              style={{ border: "1px solid rgba(253,224,71,0.55)", animation: "ringBurst 1.9s ease-out infinite" }}
+              style={{
+                border: "1px solid rgba(253,224,71,0.55)",
+                animation: "ringBurst 1.9s ease-out infinite",
+              }}
             />
             <span
               className="absolute inset-0 rounded-full"
-              style={{ border: "1px solid rgba(245,208,54,0.45)", animation: "ringBurst 2.6s ease-out .5s infinite" }}
+              style={{
+                border: "1px solid rgba(245,208,54,0.45)",
+                animation: "ringBurst 2.6s ease-out .5s infinite",
+              }}
             />
           </div>
         </div>
@@ -338,3 +394,50 @@ function SunBeamsOverlay({
     </div>
   );
 }
+
+/* ---------------- PropTypes ---------------- */
+
+WeatherFX.propTypes = {
+  lat: PropTypes.number.isRequired,
+  lng: PropTypes.number.isRequired,
+  duration: PropTypes.number,
+  maxDrops: PropTypes.number,
+  lookaheadHours: PropTypes.number,
+  probThreshold: PropTypes.number,
+  amountThreshold: PropTypes.number,
+  forceEffect: PropTypes.oneOf(["rain", "sun", null]),
+  debug: PropTypes.bool,
+  className: PropTypes.string,
+  rainDarken: PropTypes.number,
+  rainVignette: PropTypes.bool,
+  rainMist: PropTypes.bool,
+  sunBeamCount: PropTypes.number,
+  sunBeamIntensity: PropTypes.number,
+  sunBeamsAngle: PropTypes.number,
+  sunWarmWash: PropTypes.number,
+  sunSize: PropTypes.number,
+  sunCornerInset: PropTypes.number,
+  sunShowCore: PropTypes.bool,
+  sunOnOvercastIfDry: PropTypes.bool,
+  timezone: PropTypes.string,
+};
+
+RainOverlay.propTypes = {
+  maxDrops: PropTypes.number.isRequired,
+  isThunder: PropTypes.bool.isRequired,
+  className: PropTypes.string,
+  darken: PropTypes.number,
+  vignette: PropTypes.bool,
+  mist: PropTypes.bool,
+};
+
+SunBeamsOverlay.propTypes = {
+  className: PropTypes.string,
+  beamCount: PropTypes.number,
+  beamIntensity: PropTypes.number,
+  angle: PropTypes.number,
+  warmWash: PropTypes.number,
+  showCore: PropTypes.bool,
+  coreSize: PropTypes.number,
+  coreInset: PropTypes.number,
+};

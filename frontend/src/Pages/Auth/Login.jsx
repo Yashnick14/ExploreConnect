@@ -1,4 +1,4 @@
-// src/Pages/Auth/login.jsx
+// src/Pages/Auth/Login.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -33,17 +33,16 @@ const Login = () => {
       const response = await axios.post(
         `${API_BASE}/api/users/auth/firebase/login`,
         { idToken },
-        { withCredentials: true } // allow server to set a session cookie
+        { withCredentials: true }
       );
 
       if (response.data.success) {
         const backendUser = response.data.user;
         const { role } = backendUser;
 
-        // Save globally so UI/Nav can read it
         setUser(backendUser);
-
         toast.success("Login successful");
+
         if (role === "admin") navigate("/admin-dashboard", { replace: true });
         else navigate("/home", { replace: true });
 
@@ -60,7 +59,6 @@ const Login = () => {
         return null;
       }
 
-      // If not found on backend but Google returned user info, register then retry
       if (err?.response?.data?.message === "User not found" && userInfo) {
         return await registerAndRetryLogin(idToken, userInfo);
       }
@@ -79,9 +77,13 @@ const Login = () => {
         phoneNumber: userInfo.phoneNumber || "N/A",
       };
 
-      await axios.post(`${API_BASE}/api/users/auth/firebase/register`, payload, {
-        withCredentials: true,
-      });
+      await axios.post(
+        `${API_BASE}/api/users/auth/firebase/register`,
+        payload,
+        {
+          withCredentials: true,
+        }
+      );
 
       return await authenticateUser(idToken);
     } catch (err) {
@@ -127,7 +129,9 @@ const Login = () => {
       ) {
         toast.error("Google login was cancelled.");
       } else {
-        toast.error("Google login failed: " + (err?.message || "Unknown error"));
+        toast.error(
+          "Google login failed: " + (err?.message || "Unknown error")
+        );
       }
     }
   };
@@ -139,19 +143,22 @@ const Login = () => {
       // Ensure any existing Firebase user & backend session are cleared
       try {
         await signOut(auth);
-      } catch {}
+      } catch (err) {
+        console.debug("No Firebase session to clear", err);
+      }
+
       try {
         await axios.post(
           `${API_BASE}/api/users/auth/logout`,
           {},
           { withCredentials: true }
         );
-      } catch {}
+      } catch (err) {
+        console.debug("No backend session to clear", err);
+      }
 
-      // Sign in anonymously in Firebase (optional; used if you rely on Firebase state)
       const result = await signInAnonymously(auth);
 
-      // Put a "guest" user into the app store (tab-scoped if your store uses sessionStorage)
       setUser({
         uid: result.user?.uid || "guest",
         email: null,
@@ -234,7 +241,7 @@ const Login = () => {
             Google
           </button>
 
-        <button
+          <button
             onClick={handleGuestLogin}
             className="bg-black text-white border border-gray-300 py-2 px-4 rounded-lg font-medium w-1/2 hover:bg-gray-700 transition"
             disabled={loading}
@@ -245,7 +252,10 @@ const Login = () => {
 
         <p className="text-xs mt-6 text-left text-gray-700">
           CREATE NEW ACCOUNT?{" "}
-          <Link to="/register" className="underline text-black hover:text-blue-600">
+          <Link
+            to="/register"
+            className="underline text-black hover:text-blue-600"
+          >
             CLICK HERE
           </Link>
         </p>
