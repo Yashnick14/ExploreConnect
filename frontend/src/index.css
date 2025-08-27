@@ -44,14 +44,11 @@ body {
 
 
 /* -------- RegisterModal DatePicker custom styles -------- */
-/* Prevent Google Translate from touching the calendar */
 .custom-cal,
 .custom-cal * {
   -webkit-user-modify: read-only !important;
   translate: no !important;
 }
-
-
 
 .custom-cal .react-datepicker__header {
   background: #16a34a; /* green-600 */
@@ -110,18 +107,36 @@ body {
 .custom-cal__nav-btn:hover { background: rgba(255, 255, 255, 0.1); }
 .custom-cal__nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Force selected/keyboard-selected/range days to use green */
+.custom-cal .react-datepicker__day--selected,
+.custom-cal .react-datepicker__day--selected:hover,
+.custom-cal .react-datepicker__day--keyboard-selected,
+.custom-cal .react-datepicker__day--in-selecting-range,
+.custom-cal .react-datepicker__day--in-selecting-range:hover,
+.custom-cal .react-datepicker__day--in-range,
+.custom-cal .react-datepicker__day--in-range:hover {
+  background: #bbf7d0 !important; /* Tailwind green-200 */
+  color: #000000 !important;      /* Tailwind green-700 (readable) */
+}
+
+/* Optional: remove the default blue outline on focus */
+.custom-cal .react-datepicker__day--keyboard-selected {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* -------- Weather Forecast custom styles -------- */
+
 .forecast-text {
-  font-size: 10px;
+  font-size: 9px;
   text-align: center;
   white-space: normal;
   word-break: break-word;
   line-height: 1.2;
-
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   height: 28px;
-
   margin-top: 4px;   /* space below the icon */
   margin-bottom: 6px;/* space before temperature */
 }

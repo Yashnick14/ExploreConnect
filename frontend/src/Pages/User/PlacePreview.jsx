@@ -147,7 +147,10 @@ const reviewsData = [
 const PlacePreview = () => {
   const { id } = useParams();
   const { getPlaceById } = usePlaceStore();
-  const { createRegistration } = useRegistrationStore();
+
+  // ⬇️ pull both createRegistration and hasBlockedRegistration
+  const { createRegistration, hasBlockedRegistration } = useRegistrationStore();
+
   const { user, loadUserFromStorage } = useAuthStore();
 
   // favorites store
@@ -159,7 +162,6 @@ const PlacePreview = () => {
   const [showRegister, setShowRegister] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
 
-  // derived isFav from store (no separate local truth)
   const isFav = useMemo(
     () => (place?._id ? favoriteIds.has(place._id) : false),
     [favoriteIds, place?._id]
@@ -182,14 +184,12 @@ const PlacePreview = () => {
     })();
   }, [id, getPlaceById]);
 
-  // Load favorites when we know the user (and not guest)
   useEffect(() => {
     if (user?.email && !isAnonymous) {
       fetchFavorites(user.email);
     }
   }, [user?.email, isAnonymous, fetchFavorites]);
 
-  // Prefill values for RegisterModal from logged-in user
   const initialRegValues = useMemo(
     () => ({
       name: user?.fullName || user?.username || user?.name || "",
@@ -205,7 +205,6 @@ const PlacePreview = () => {
     try {
       if (typeof w === "string") w = JSON.parse(w);
     } catch (err) {
-      //avoid empty catch for ESLint
       console.debug("Invalid workingHoursWeekly", err);
     }
     return w;
@@ -246,6 +245,8 @@ const PlacePreview = () => {
 
   const handleRegisterSubmit = async (payload) => {
     if (!place?._id) return toast.error("Missing place id");
+
+    // basic field and time validation (unchanged)
     const [dd, mm, yyyy] = (payload.date || "").split("/").map(Number);
     const userDate = dd && mm && yyyy ? new Date(yyyy, mm - 1, dd) : null;
     const userTimeMin = parseUserTimeToMinutes(payload.time);
@@ -258,6 +259,23 @@ const PlacePreview = () => {
     )
       return toast.error("Please fill all fields (valid date & time).");
 
+    // ⛔️ NEW: block if a pending/approved registration already exists for this place+date
+    try {
+      const { exists } = await hasBlockedRegistration({
+        email: (user?.email || payload.email || "").trim(),
+        placeId: place._id,
+        date: payload.date, // "DD/MM/YYYY"
+      });
+      if (exists) {
+        return toast.error(
+          "You already have a registration (pending/approved) for this place on this date."
+        );
+      }
+    } catch {
+      // If the check fails silently, we still let server enforce it.
+    }
+
+    // opening hours validation (unchanged)
     let openMin = null,
       closeMin = null;
     if (Array.isArray(weekly) && weekly.length === 7) {
@@ -356,7 +374,6 @@ const PlacePreview = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">{place.name}</h1>
           <div className="flex items-center gap-3">
-            {/* Favorites button (red fill when true) */}
             <button
               onClick={handleFavoriteClick}
               aria-pressed={isFav}

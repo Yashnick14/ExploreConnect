@@ -11,9 +11,54 @@ export const useRegistrationStore = create((set, get) => ({
   setRegistrations: (list) =>
     set({ registrations: Array.isArray(list) ? list : [] }),
 
+  /**
+   * Check if the user already has a registration for the same place & date
+   * that is either PENDING or APPROVED (i.e., should block).
+   * Returns: { exists: boolean, match?: object }
+   */
+  hasBlockedRegistration: async ({ email, placeId, date }) => {
+    if (!email || !placeId || !date) return { exists: false };
+
+    try {
+      // Re-use the list endpoint (server already supports place/email filters)
+      // We also send 'date' as a query param; if the API ignores it, we filter on client.
+      const u = new URL(api("/api/registrations"), window.location.origin);
+      u.searchParams.set("place", placeId);
+      u.searchParams.set("email", email);
+      u.searchParams.set("date", date);
+
+      const res = await fetch(u.toString().replace(window.location.origin, ""));
+      const data = await res.json();
+
+      const items = Array.isArray(data?.data) ? data.data : [];
+      const match = items.find((r) =>
+        String(r?.date) === String(date) &&
+        ["pending", "approved"].includes(String(r?.status || "").toLowerCase())
+      );
+
+      return { exists: !!match, match };
+    } catch (err) {
+      console.error("❌ hasBlockedRegistration error:", err);
+      return { exists: false };
+    }
+  },
+
   /* CREATE */
   createRegistration: async (payload) => {
     try {
+      // --- Safety pre-check on the client as an extra guard (server should also enforce) ---
+      const { email, placeId, date } = payload || {};
+      if (email && placeId && date) {
+        const { exists } = await get().hasBlockedRegistration({ email, placeId, date });
+        if (exists) {
+          return {
+            success: false,
+            message:
+              "You already have a pending/approved registration for this place on that date.",
+          };
+        }
+      }
+
       const res = await fetch(api("/api/registrations"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },

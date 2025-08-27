@@ -258,7 +258,7 @@ const RegisterModal = ({
                           ? " bg-green-600 text-white"
                           : "";
                       const markToday = isSameDay(d, today)
-                        ? " bg-green-200"
+                        ? " bg-gray-100"
                         : "";
                       const isDisabled = d < startOfToday;
                       const state = isDisabled
