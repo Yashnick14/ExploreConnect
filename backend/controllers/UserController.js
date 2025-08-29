@@ -1,6 +1,6 @@
 // controllers/UserController.js
 import User from "../models/UserModel.js";
-import admin from '../utils/firebaseAdmin.js'; 
+import admin from "../utils/firebaseAdmin.js";
 
 export const getUsers = async (req, res) => {
   try {
@@ -18,16 +18,22 @@ export const toggleUserStatus = async (req, res) => {
     const user = await User.findById(id);
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.status = user.status === "active" ? "inactive" : "active";
     await user.save();
 
-    res.status(200).json({ success: true, message: `User ${user.status}`, data: user });
+    res
+      .status(200)
+      .json({ success: true, message: `User ${user.status}`, data: user });
   } catch (err) {
     console.error("Error toggling user status:", err.message);
-    res.status(500).json({ success: false, message: "Failed to update user status" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update user status" });
   }
 };
 
@@ -37,7 +43,9 @@ export const deleteUser = async (req, res) => {
     const user = await User.findById(id);
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const firebaseUid = user.uid;
@@ -50,18 +58,45 @@ export const deleteUser = async (req, res) => {
       try {
         await admin.auth().deleteUser(firebaseUid);
       } catch (firebaseError) {
-        console.error("❌ Error deleting from Firebase:", firebaseError.message);
+        console.error(
+          "❌ Error deleting from Firebase:",
+          firebaseError.message
+        );
         // Optional: Reinsert MongoDB user if Firebase deletion fails
       }
     } else {
       console.warn("⚠️ No Firebase UID found, skipping Firebase deletion");
     }
 
-    res.status(200).json({ success: true, message: "User deleted from DB and Firebase" });
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted from DB and Firebase" });
   } catch (err) {
     console.error("❌ General error in deleteUser:", err.message);
     res.status(500).json({ success: false, message: "Failed to delete user" });
   }
 };
 
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params; // get id from URL
+    const { username } = req.body;
 
+    const updates = {};
+    if (username) updates.username = username;
+    if (req.file) updates.avatar = req.file.path; // store image path
+
+    const user = await User.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
