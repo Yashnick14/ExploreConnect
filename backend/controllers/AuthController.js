@@ -95,6 +95,7 @@ export const firebaseLogin = async (req, res) => {
       success: true,
       message: "Login successful",
       user: {
+        _id: user._id, 
         uid: user.uid,
         fullName: user.fullName,
         username: user.username,

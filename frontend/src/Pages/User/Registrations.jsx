@@ -7,9 +7,12 @@ import { toast, Toaster } from "react-hot-toast";
 import { useRegistrationStore } from "@/store/User/Registration";
 import { useAuthStore } from "@/store/Auth/auth";
 import { usePlaceStore } from "@/store/Place/place";
-import RegisterModal from "@/Components/RegisterModal";
+import { useReviewStore } from "@/store/User/Review";
 
-/* ===== Cancel confirm modal (styled like the Edit modal) ===== */
+import RegisterModal from "@/Components/RegisterModal";
+import ReviewModal from "@/Components/ReviewModal";
+
+/* ===== Cancel confirm modal ===== */
 const CancelConfirmModal = ({ onCancel, onConfirm, confirming = false }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
     <div className="bg-white shadow-xl rounded-2xl p-6 w-[360px] sm:w-[420px] border border-gray-200">
@@ -81,7 +84,9 @@ const StatusPill = ({ status }) => {
   };
   return (
     <span
-      className={`px-2 py-1 rounded-sm text-xs font-medium ${map[status] || "bg-gray-100 text-gray-700"}`}
+      className={`px-2 py-1 rounded-sm text-xs font-medium ${
+        map[status] || "bg-gray-100 text-gray-700"
+      }`}
     >
       {status || "pending"}
     </span>
@@ -97,10 +102,11 @@ export default function Registrations() {
   const {
     registrations,
     fetchRegistrations,
-    updateRegistration, // used to set status: "cancelled"
+    updateRegistration,
     createEditRequest,
   } = useRegistrationStore();
   const { places, fetchPlaces } = usePlaceStore();
+  const { createReview } = useReviewStore();
 
   const [loading, setLoading] = useState(true);
 
@@ -112,6 +118,9 @@ export default function Registrations() {
   // Cancel modal state
   const [pendingCancel, setPendingCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+
+  // Review modal state
+  const [reviewingReg, setReviewingReg] = useState(null);
 
   useEffect(() => {
     loadUserFromStorage?.();
@@ -173,21 +182,20 @@ export default function Registrations() {
     return { id, name, district, imageFile };
   };
 
-  // Open edit modal with prefilled values
+  // Edit
   const onEdit = (r) => {
     setEditingId(r._id);
     setEditInitial({
       name: r.name || "",
       email: r.email || "",
       phone: r.phone || "",
-      date: toDDMMYYYY(r.date), // dd/MM/yyyy
+      date: toDDMMYYYY(r.date),
       time: r.time || "",
       people: r.people || 1,
     });
     setShowEdit(true);
   };
 
-  // Submit edit -> create pending request (user flow)
   const onEditSubmit = async (payload) => {
     if (!editingId) return;
     const reqPayload = {
@@ -210,10 +218,9 @@ export default function Registrations() {
     }
   };
 
-  // Open cancel modal
+  // Cancel
   const onCancelClick = (r) => setPendingCancel(r);
 
-  // Confirm cancel action -> set status to "cancelled"
   const handleConfirmCancel = async () => {
     if (!pendingCancel) return;
     try {
@@ -232,6 +239,39 @@ export default function Registrations() {
     } finally {
       setCancelling(false);
       setPendingCancel(null);
+    }
+  };
+
+  // Review
+  const handleReviewSubmit = async (payload) => {
+    if (!reviewingReg) return;
+
+    const placeId =
+      typeof reviewingReg.place === "object"
+        ? reviewingReg.place._id
+        : reviewingReg.place;
+
+    const registrationId = reviewingReg._id;
+
+    const res = await createReview({
+      placeId,
+      registrationId,
+      userId: user._id,
+      rating: payload.rating,
+      title: payload.title,
+      comment: payload.comment,
+      user: {
+        fullName: user.fullName || user.username || user.email,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+
+    if (res.success) {
+      toast.success("Review submitted!");
+      setReviewingReg(null);
+    } else {
+      toast.error(res.message || "Failed to submit review");
     }
   };
 
@@ -285,14 +325,12 @@ export default function Registrations() {
                   : null;
                 const hasPendingEdit = !!r.pendingEdit;
 
-                // Edit only for pending/approved and no existing pending edit
                 const isEditableStatus =
                   r.status === "pending" || r.status === "approved";
                 const canEdit = isEditableStatus && !hasPendingEdit;
-
-                // Cancel only for pending/approved
                 const canCancel =
                   r.status === "pending" || r.status === "approved";
+                const canReview = r.status === "completed";
 
                 return (
                   <tr
@@ -340,11 +378,7 @@ export default function Registrations() {
                         {hasPendingEdit && (
                           <span
                             className="px-2 py-1 rounded-sm text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200"
-                            title={`Requested: ${r.pendingEdit?.patch?.date || toDDMMYYYY(r.date)} • ${
-                              r.pendingEdit?.patch?.time || r.time
-                            } • ${r.pendingEdit?.patch?.people || r.people} • ${
-                              r.pendingEdit?.patch?.phone || r.phone
-                            }`}
+                            title="Pending approval for changes"
                           >
                             Pending approval for changes
                           </span>
@@ -352,9 +386,9 @@ export default function Registrations() {
                       </div>
                     </td>
 
-                    {/* Actions */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Edit */}
                         <button
                           onClick={() => onEdit(r)}
                           disabled={!canEdit}
@@ -363,16 +397,11 @@ export default function Registrations() {
                               ? "border-gray-300 text-gray-700 hover:bg-gray-50"
                               : "border-gray-200 text-gray-400 cursor-not-allowed"
                           }`}
-                          title={
-                            hasPendingEdit
-                              ? "Edit request already pending"
-                              : isEditableStatus
-                                ? "Edit"
-                                : "Editing only allowed for Pending or Approved"
-                          }
                         >
                           Edit
                         </button>
+
+                        {/* Cancel */}
                         <button
                           onClick={() => onCancelClick(r)}
                           disabled={!canCancel}
@@ -381,13 +410,21 @@ export default function Registrations() {
                               ? "border-rose-300 text-rose-700 hover:bg-rose-50"
                               : "border-gray-200 text-gray-400 cursor-not-allowed"
                           }`}
-                          title={
-                            canCancel
-                              ? "Cancel this registration"
-                              : "Cancellation not allowed once Completed or already Cancelled"
-                          }
                         >
                           Cancel
+                        </button>
+
+                        {/* Review */}
+                        <button
+                          onClick={() => setReviewingReg(r)}
+                          disabled={!canReview}
+                          className={`px-3 py-1.5 text-xs rounded border ${
+                            canReview
+                              ? "border-blue-300 text-blue-700 hover:bg-blue-50"
+                              : "border-gray-200 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          Write Review
                         </button>
                       </div>
                     </td>
@@ -399,7 +436,7 @@ export default function Registrations() {
         </table>
       </div>
 
-      {/* Edit Modal (prefilled → creates pending edit request) */}
+      {/* Edit Modal */}
       {showEdit && editInitial && (
         <RegisterModal
           isOpen={showEdit}
@@ -420,6 +457,16 @@ export default function Registrations() {
           onCancel={() => setPendingCancel(null)}
           onConfirm={handleConfirmCancel}
           confirming={cancelling}
+        />
+      )}
+
+      {/* Review Modal */}
+      {reviewingReg && (
+        <ReviewModal
+          isOpen={!!reviewingReg}
+          onClose={() => setReviewingReg(null)}
+          onSubmit={handleReviewSubmit}
+          placeName={resolveDisplay(reviewingReg).name}
         />
       )}
     </div>
