@@ -45,14 +45,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "", // store image URL or path
     },
-<<<<<<< HEAD
     theme: {
       type: String,
       enum: ["theme1", "theme2", "theme3", "theme4"],
       default: "theme1",
     },
-=======
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
   },
   {
     timestamps: true,

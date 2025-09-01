@@ -16,7 +16,6 @@
     "firebase": "^11.10.0",
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",
-    "mern-app": "file:..",
     "next-themes": "^0.4.6",
     "react": "^19.1.0",
     "react-datepicker": "^8.4.0",

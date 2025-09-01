@@ -77,7 +77,6 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
 // controllers/userController.js
 export const updateUserProfile = async (req, res) => {
   try {
@@ -110,16 +109,6 @@ export const updateUserProfile = async (req, res) => {
       // ✅ Always save as relative path "uploads/..."
       updates.avatar = `uploads/${req.file.filename}`;
     }
-=======
-export const updateUserProfile = async (req, res) => {
-  try {
-    const { id } = req.params; // get id from URL
-    const { username } = req.body;
-
-    const updates = {};
-    if (username) updates.username = username;
-    if (req.file) updates.avatar = req.file.path; // store image path
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
 
     const user = await User.findByIdAndUpdate(id, updates, { new: true });
 
