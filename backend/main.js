@@ -57,7 +57,11 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/favorites", favoritesRouter);
 app.use("/api/reviews", reviewRoutes);
+<<<<<<< HEAD
 app.use("/api/user", userRoutes);
+=======
+app.use("/api/users", userRoutes);
+>>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
 
 // Frontend serve for production
 if (process.env.NODE_ENV === "production") {
