@@ -1,12 +1,12 @@
-import User from '../models/UserModel.js';
-import admin from 'firebase-admin';
-import { createRequire } from 'node:module';
-import dotenv from 'dotenv';
+import User from "../models/UserModel.js";
+import admin from "firebase-admin";
+import { createRequire } from "node:module";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const require = createRequire(import.meta.url);
-const serviceAccount = require('../firebaseServiceAccount.json');
+const serviceAccount = require("../firebaseServiceAccount.json");
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -19,7 +19,9 @@ export const firebaseRegister = async (req, res) => {
   const { idToken, fullName, username, phoneNumber } = req.body;
 
   if (!idToken || !fullName || !username || !phoneNumber) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
 
   try {
@@ -28,16 +30,20 @@ export const firebaseRegister = async (req, res) => {
 
     let user = await User.findOne({ uid });
     if (user) {
-      return res.status(409).json({ success: false, message: "User already exists" });
+      return res
+        .status(409)
+        .json({ success: false, message: "User already exists" });
     }
 
-    user = new User({ uid, email, fullName, username,  phoneNumber });
+    user = new User({ uid, email, fullName, username, phoneNumber });
     await user.save();
 
     res.status(201).json({ success: true, message: "User registered", user });
   } catch (err) {
     console.error("Firebase Register Error:", err);
-    res.status(500).json({ success: false, message: err.message || "Registration failed" });
+    res
+      .status(500)
+      .json({ success: false, message: err.message || "Registration failed" });
   }
 };
 
@@ -46,7 +52,9 @@ export const firebaseLogin = async (req, res) => {
   const { idToken } = req.body;
 
   if (!idToken) {
-    return res.status(400).json({ success: false, message: "Token is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Token is required" });
   }
 
   try {
@@ -59,7 +67,9 @@ export const firebaseLogin = async (req, res) => {
       null;
 
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email not found in token" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email not found in token" });
     }
 
     let user = await User.findOne({ uid });
@@ -95,6 +105,7 @@ export const firebaseLogin = async (req, res) => {
       success: true,
       message: "Login successful",
       user: {
+        _id: user._id,
         uid: user.uid,
         fullName: user.fullName,
         username: user.username,
@@ -102,6 +113,8 @@ export const firebaseLogin = async (req, res) => {
         phoneNumber: user.phoneNumber,
         role: user.role,
         status: user.status,
+        avatar: user.avatar,
+        theme: user.theme,
       },
     });
   } catch (err) {
@@ -113,12 +126,14 @@ export const firebaseLogin = async (req, res) => {
   }
 };
 
-// FORGOT PASSWORD 
+// FORGOT PASSWORD
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ success: false, message: "Email is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Email is required" });
   }
 
   try {
@@ -126,7 +141,9 @@ export const forgotPassword = async (req, res) => {
     const userRecord = await admin.auth().getUserByEmail(email);
 
     if (!userRecord) {
-      return res.status(404).json({ success: false, message: "No account with this email" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No account with this email" });
     }
 
     // ✅ Generate reset link
@@ -135,15 +152,29 @@ export const forgotPassword = async (req, res) => {
       handleCodeInApp: true,
     });
 
-    res.status(200).json({ success: true, message: "Reset email sent", link: resetLink });
+    res
+      .status(200)
+      .json({ success: true, message: "Reset email sent", link: resetLink });
   } catch (err) {
     console.error("Forgot Password Firebase Error:", err);
 
-    if (err.code === 'auth/user-not-found') {
-      return res.status(404).json({ success: false, message: "No account with this email" });
+    if (err.code === "auth/user-not-found") {
+      return res
+        .status(404)
+        .json({ success: false, message: "No account with this email" });
     }
 
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
+export const logoutUser = async (req, res) => {
+  try {
+    // If you were using cookies/session, clear them here
+    res.clearCookie("connect.sid"); // safe to call even if not set
+    return res.status(200).json({ success: true, message: "Logged out" });
+  } catch (err) {
+    console.error("Logout error:", err.message);
+    return res.status(500).json({ success: false, message: "Logout failed" });
+  }
+};

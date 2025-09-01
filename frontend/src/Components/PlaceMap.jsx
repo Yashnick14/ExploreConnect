@@ -275,7 +275,7 @@ export default function PlaceMap({
           </button>
           <button
             onClick={startPick}
-            className="text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
+            className="text-sm text-gray-900 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-200"
             title="Manually pick a start point on the map"
           >
             Pick start on map
@@ -283,7 +283,7 @@ export default function PlaceMap({
           {origin && (
             <button
               onClick={clearDirections}
-              className="text-sm px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-50"
+              className="text-sm text-gray-900 px-3 py-1.5 rounded-md border border-gray-300 hover:bg-gray-200"
               title="Clear directions"
             >
               Clear

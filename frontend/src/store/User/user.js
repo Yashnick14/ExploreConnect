@@ -1,35 +1,95 @@
-// store/User/user.js
+// src/store/User/user.js
 import { create } from "zustand";
+import axios from "axios";
+import { useAuthStore } from "../Auth/auth";
+import { normalizeUser } from "@/store/User/NormalizeUser"; // ✅ import utility
 
 export const useUserStore = create((set, get) => ({
   users: [],
-  setUsers: (users) => set({ users }),
+  setUsers: (users) => set({ users: users.map(normalizeUser) }),
 
+  // Fetch all users (admin only)
   fetchUsers: async () => {
-    const res = await fetch("/api/admin/admin-users");
-    const data = await res.json();
-    set({ users: data.data });
+    try {
+      const res = await fetch("/api/admin/admin-users");
+      const data = await res.json();
+      if (data.success) {
+        set({ users: data.data.map(normalizeUser) }); // ✅ normalize list
+      }
+    } catch (err) {
+      console.error("❌ Error fetching users:", err.message);
+    }
   },
 
+  // Toggle active/inactive status
   toggleStatus: async (id) => {
-    const res = await fetch(`/api/admin/admin-users/status/${id}`, { method: "PUT" });
-    const data = await res.json();
-    if (data.success) {
-      const updatedUsers = get().users.map((user) =>
-        user._id === id ? { ...user, status: data.data.status } : user
-      );
-      set({ users: updatedUsers });
+    try {
+      const res = await fetch(`/api/admin/admin-users/status/${id}`, {
+        method: "PUT",
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const updatedUsers = get().users.map((user) =>
+          user._id === id
+            ? normalizeUser({ ...user, status: data.data.status }) // ✅ normalize
+            : user
+        );
+        set({ users: updatedUsers });
+      }
+
+      return data;
+    } catch (err) {
+      console.error("❌ Error toggling status:", err.message);
+      return { success: false, message: err.message };
     }
-    return data;
   },
 
+  // Delete user
   deleteUser: async (id) => {
-    const res = await fetch(`/api/admin/admin-users/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (data.success) {
-      const updatedUsers = get().users.filter((u) => u._id !== id);
-      set({ users: updatedUsers });
+    try {
+      const res = await fetch(`/api/admin/admin-users/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const updatedUsers = get().users.filter((u) => u._id !== id);
+        set({ users: updatedUsers });
+      }
+
+      return data;
+    } catch (err) {
+      console.error("❌ Error deleting user:", err.message);
+      return { success: false, message: err.message };
     }
-    return data;
+  },
+
+  // ✅ Update logged-in user profile
+  updateUserProfile: async (id, formData) => {
+    try {
+      const res = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/profile/${id}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      if (res.data.success) {
+        const normalized = normalizeUser(res.data.data);
+        useAuthStore.getState().setUser(normalized);
+
+        const updatedUsers = get().users.map((u) =>
+          u._id === id ? normalized : u
+        );
+        set({ users: updatedUsers });
+      }
+
+      return res.data;
+    } catch (err) {
+      // ✅ extract server message if available
+      const message = err.response?.data?.message || "Error updating profile";
+
+      return { success: false, message };
+    }
   },
 }));

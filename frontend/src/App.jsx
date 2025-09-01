@@ -21,10 +21,7 @@ import RegistrationManagement from "./Pages/Admin/RegistrationManagement";
 import MyRegistrations from "@/Pages/User/Registrations";
 import Favorites from "./Pages/User/Favorites";
 
-
-
 function App() {
-
   const location = useLocation();
   const adminRoutes = [
     "/",
@@ -35,7 +32,7 @@ function App() {
     "/login",
     "/reset-password",
     "/forgot-password",
-    "/registration-management"
+    "/registration-management",
   ];
   const isAdminRoute = adminRoutes.includes(location.pathname);
 
@@ -59,7 +56,10 @@ function App() {
           <Route path="/places/:id" element={<PlacePreview />} />
           <Route path="/place-management" element={<PlaceManagement />} />
           <Route path="/user-management" element={<UserManagement />} />
-          <Route path="/registration-management" element={<RegistrationManagement />} />
+          <Route
+            path="/registration-management"
+            element={<RegistrationManagement />}
+          />
           <Route path="/membership" element={<Membership />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/registrations" element={<MyRegistrations />} />
@@ -74,10 +74,9 @@ function App() {
       {/* Footer (not shown on admin routes) */}
       {!isAdminRoute && <Footer />}
 
-    <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-4 right-4 z-50">
         <GoogleTranslate />
       </div>
-
     </div>
   );
 }

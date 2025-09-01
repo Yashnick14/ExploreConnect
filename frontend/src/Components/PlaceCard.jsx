@@ -1,11 +1,37 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { HiStar } from "react-icons/hi2";
 import { HiOutlineLocationMarker } from "react-icons/hi";
 import { MdOutlinePets } from "react-icons/md";
+import { AiFillStar, AiOutlineStar } from "react-icons/ai";
 
 const PlaceCard = ({ place }) => {
+  const avg = place.avgRating || 0;
+  const total = place.totalReviews || 0;
+
+  // Build star array (0–5) based on avgRating
+  const renderStars = () => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (avg >= i) {
+        stars.push(<AiFillStar key={i} className="text-yellow-400 w-5 h-5" />);
+      } else if (avg >= i - 0.5) {
+        stars.push(
+          <span key={i} className="relative w-5 h-5">
+            <AiOutlineStar className="text-yellow-400 w-5 h-5 absolute" />
+            <AiFillStar
+              className="text-yellow-400 w-5 h-5 absolute"
+              style={{ clipPath: "inset(0 50% 0 0)" }}
+            />
+          </span>
+        );
+      } else {
+        stars.push(<AiOutlineStar key={i} className="text-gray-300 w-5 h-5" />);
+      }
+    }
+    return stars;
+  };
+
   return (
     <Link
       to={`/places/${place._id}`}
@@ -32,27 +58,30 @@ const PlaceCard = ({ place }) => {
 
       {/* Content */}
       <div className="p-5 text-center">
-        {/* Title */}
         <h3 className="text-gray-900 text-lg font-semibold mb-2 leading-tight">
           {place.name}
         </h3>
 
-        {/* Location */}
         <p className="flex justify-center items-center text-gray-600 text-sm gap-1 mb-1">
           <HiOutlineLocationMarker className="text-red-600 text-base" />
           <span className="font-medium">{place.district}</span>
         </p>
 
-        {/* Working Hours */}
         <p className="text-xs text-gray-500 font-medium tracking-wide mb-2">
           Open: {place.workingHours}
         </p>
 
-        {/* Rating */}
-        <p className="text-sm font-medium flex justify-center items-center gap-1 text-emerald-500">
-          <HiStar className="text-yellow-400" />
-          <span>4.6 (120 reviews)</span>
-        </p>
+        {/* ⭐ Dynamic Stars + Rating */}
+        {total > 0 ? (
+          <div className="flex justify-center items-center gap-1">
+            {renderStars()}
+            <span className="ml-2 text-sm font-medium text-emerald-700">
+              {avg.toFixed(1)}
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-emerald-700">No reviews yet</p>
+        )}
       </div>
     </Link>
   );
@@ -66,6 +95,8 @@ PlaceCard.propTypes = {
     workingHours: PropTypes.string,
     petsAllowed: PropTypes.bool,
     images: PropTypes.arrayOf(PropTypes.string),
+    avgRating: PropTypes.number,
+    totalReviews: PropTypes.number,
   }).isRequired,
 };
 

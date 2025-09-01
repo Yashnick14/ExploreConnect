@@ -34,17 +34,17 @@ const Places = () => {
   const uniqueDistricts = [...new Set(places.map((p) => p.district))];
 
   return (
-    <div className="relative bg-gray-100 min-h-screen p-3 sm:p-4 md:p-5 pt-16 sm:pt-20 md:pt-24">
+    <div className="relative min-h-screen p-3 sm:p-4 md:p-5 pt-16 sm:pt-20 md:pt-24">
       {/* Header with Filter Icon */}
       <div className="flex justify-center items-center relative mb-4 sm:mb-6 md:mb-8">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center px-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center px-8 text-gray-900">
           Explore Places
         </h1>
 
         {/* Filter Button */}
         <button
           onClick={() => setShowSidebar(true)}
-          className="absolute right-0 bg-white p-2 rounded-full shadow-md hover:shadow-lg transition-shadow"
+          className="absolute right-0 bg-white text-gray-800 p-2 rounded-full shadow-md hover:shadow-lg transition-shadow"
         >
           <FiFilter size={18} className="sm:hidden" />
           <FiFilter size={20} className="hidden sm:block md:hidden" />
@@ -63,7 +63,7 @@ const Places = () => {
 
       {/* Overlay for mobile when sidebar is open */}
       {showSidebar && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setShowSidebar(false)}
         />
@@ -110,7 +110,7 @@ const Places = () => {
               Category
             </label>
             <select
-              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-colors text-sm"
+              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-100 focus:border-gray-400 transition-colors text-sm bg-white text-gray-900"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
@@ -129,7 +129,7 @@ const Places = () => {
               District
             </label>
             <select
-              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:border-gray-400 transition-colors text-sm"
+              className="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-100 focus:border-gray-400 transition-colors text-sm bg-white text-gray-900"
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
             >
@@ -156,7 +156,7 @@ const Places = () => {
           {/* Results count for mobile */}
           <div className="mt-4 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:hidden">
             <p className="text-xs text-gray-600 text-center">
-              {filtered.length} place{filtered.length !== 1 ? 's' : ''} found
+              {filtered.length} place{filtered.length !== 1 ? "s" : ""} found
             </p>
           </div>
         </div>

@@ -1,12 +1,14 @@
-import Place from '../models/PlacesModel.js';
-import mongoose from 'mongoose';
+import Place from "../models/PlacesModel.js";
+import Review from "../models/ReviewModel.js";
+
+import mongoose from "mongoose";
 
 const hoursRX =
   /^([1-9]|1[0-2])(:[0-5][0-9])?\s?(am|pm)\s*-\s*([1-9]|1[0-2])(:[0-5][0-9])?\s?(am|pm)$/i;
 const phoneRX = /^\d{10}$/;
 const timeRX = /^\d{2}:\d{2}$/; // HH:MM (24h) used by weekly editor
 
-const isBlank = (v) => v == null || (typeof v === 'string' && v.trim() === '');
+const isBlank = (v) => v == null || (typeof v === "string" && v.trim() === "");
 
 function getUploadedImages(files) {
   // Multer may give: req.files (array), or req.files.images (array), or nothing
@@ -18,15 +20,15 @@ function getUploadedImages(files) {
 function parseWeekly(raw) {
   if (!raw) return undefined;
   try {
-    const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const arr = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!Array.isArray(arr) || arr.length !== 7) return undefined;
 
     // Normalize shape: support "day" or "key" ("Mon", "Tue", ...)
     const cleaned = arr.map((d) => ({
-      day: String(d.day || d.key || ''), // store the short code
+      day: String(d.day || d.key || ""), // store the short code
       isOpen: !!d.isOpen,
-      open: d.open || '',
-      close: d.close || '',
+      open: d.open || "",
+      close: d.close || "",
     }));
 
     for (const d of cleaned) {
@@ -40,14 +42,46 @@ function parseWeekly(raw) {
   }
 }
 
-// GET all
+// GET all with review stats
 export const getPlaces = async (req, res) => {
   try {
     const places = await Place.find({});
-    res.status(200).json({ success: true, data: places });
+
+    // Group reviews by place
+    const stats = await Review.aggregate([
+      {
+        $group: {
+          _id: "$place",
+          avgRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const reviewMap = {};
+    stats.forEach((s) => {
+      reviewMap[s._id.toString()] = {
+        avgRating: s.avgRating,
+        totalReviews: s.totalReviews,
+      };
+    });
+
+    const enriched = places.map((p) => {
+      const s = reviewMap[p._id.toString()] || {
+        avgRating: 0,
+        totalReviews: 0,
+      };
+      return {
+        ...p.toObject(),
+        avgRating: Number(s.avgRating?.toFixed(1) || 0),
+        totalReviews: s.totalReviews,
+      };
+    });
+
+    res.status(200).json({ success: true, data: enriched });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("❌ getPlaces error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -58,7 +92,7 @@ export const getLatestPlaces = async (req, res) => {
     res.status(200).json({ success: true, data: places });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -102,7 +136,7 @@ export const createPlace = async (req, res) => {
     if (!images || images.length === 0) {
       return res
         .status(400)
-        .json({ success: false, message: 'At least one image is required.' });
+        .json({ success: false, message: "At least one image is required." });
     }
 
     // Validate formats
@@ -110,13 +144,13 @@ export const createPlace = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          'Working hours must be like 9am-5pm or 9:00 AM-5:00 PM (12h format).',
+          "Working hours must be like 9am-5pm or 9:00 AM-5:00 PM (12h format).",
       });
     }
     if (!phoneRX.test(contactNumber)) {
       return res.status(400).json({
         success: false,
-        message: 'Contact number must be exactly 10 digits.',
+        message: "Contact number must be exactly 10 digits.",
       });
     }
 
@@ -126,12 +160,12 @@ export const createPlace = async (req, res) => {
     if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
       return res
         .status(400)
-        .json({ success: false, message: 'Latitude/longitude invalid.' });
+        .json({ success: false, message: "Latitude/longitude invalid." });
     }
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude/longitude out of range.',
+        message: "Latitude/longitude out of range.",
       });
     }
 
@@ -140,13 +174,13 @@ export const createPlace = async (req, res) => {
     if (workingHoursWeekly && !weekly) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid weekly hours payload.' });
+        .json({ success: false, message: "Invalid weekly hours payload." });
     }
 
     if (await Place.findOne({ name })) {
       return res
         .status(409)
-        .json({ success: false, message: 'Place already exists' });
+        .json({ success: false, message: "Place already exists" });
     }
 
     const filenames = images.map((f) => f.filename);
@@ -160,7 +194,7 @@ export const createPlace = async (req, res) => {
       contactNumber,
       workingHours,
       workingHoursWeekly: weekly,
-      petsAllowed: petsAllowed === 'true' || petsAllowed === true,
+      petsAllowed: petsAllowed === "true" || petsAllowed === true,
       images: filenames,
       lat: latNum,
       lng: lngNum,
@@ -170,8 +204,8 @@ export const createPlace = async (req, res) => {
     await doc.save();
     return res.status(201).json({ success: true, data: doc });
   } catch (err) {
-    console.error('Place creation error:', err);
-    return res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Place creation error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -179,7 +213,7 @@ export const createPlace = async (req, res) => {
 export const updatePlace = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: 'Invalid ID' });
+    return res.status(400).json({ success: false, message: "Invalid ID" });
   }
 
   try {
@@ -203,13 +237,13 @@ export const updatePlace = async (req, res) => {
     if (!hoursRX.test(workingHours)) {
       return res.status(400).json({
         success: false,
-        message: 'Hours must be like 9am-5pm or 9:00 AM-5:00 PM.',
+        message: "Hours must be like 9am-5pm or 9:00 AM-5:00 PM.",
       });
     }
     if (!phoneRX.test(contactNumber)) {
       return res
         .status(400)
-        .json({ success: false, message: 'Phone must be 10 digits.' });
+        .json({ success: false, message: "Phone must be 10 digits." });
     }
 
     const latNum = Number(lat);
@@ -217,24 +251,24 @@ export const updatePlace = async (req, res) => {
     if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
       return res
         .status(400)
-        .json({ success: false, message: 'Latitude/longitude invalid.' });
+        .json({ success: false, message: "Latitude/longitude invalid." });
     }
     if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
       return res
         .status(400)
-        .json({ success: false, message: 'Latitude/longitude out of range.' });
+        .json({ success: false, message: "Latitude/longitude out of range." });
     }
 
     const weekly = parseWeekly(workingHoursWeekly);
     if (workingHoursWeekly && !weekly) {
       return res
         .status(400)
-        .json({ success: false, message: 'Invalid weekly hours payload.' });
+        .json({ success: false, message: "Invalid weekly hours payload." });
     }
 
     const existing = await Place.findById(id);
     if (!existing)
-      return res.status(404).json({ success: false, message: 'Not found' });
+      return res.status(404).json({ success: false, message: "Not found" });
 
     // Merge images
     let final = [...existing.images];
@@ -249,7 +283,7 @@ export const updatePlace = async (req, res) => {
     if (final.length === 0) {
       return res
         .status(400)
-        .json({ success: false, message: 'At least one image required.' });
+        .json({ success: false, message: "At least one image required." });
     }
 
     const upd = {
@@ -261,20 +295,20 @@ export const updatePlace = async (req, res) => {
       contactNumber,
       workingHours,
       workingHoursWeekly: weekly ?? existing.workingHoursWeekly,
-      petsAllowed: petsAllowed === 'true' || petsAllowed === true,
+      petsAllowed: petsAllowed === "true" || petsAllowed === true,
       images: final.slice(0, 4),
       lat: latNum,
       lng: lngNum,
     };
 
     // Allow clearing weekly schedule by sending empty string
-    if (workingHoursWeekly === '') upd.workingHoursWeekly = undefined;
+    if (workingHoursWeekly === "") upd.workingHoursWeekly = undefined;
 
     const updated = await Place.findByIdAndUpdate(id, upd, { new: true });
     return res.status(200).json({ success: true, data: updated });
   } catch (err) {
-    console.error('Update place error:', err);
-    return res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Update place error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -282,25 +316,25 @@ export const updatePlace = async (req, res) => {
 export const deletePlace = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id))
-    return res.status(400).json({ success: false, message: 'Invalid ID' });
+    return res.status(400).json({ success: false, message: "Invalid ID" });
   try {
     await Place.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: 'Deleted' });
+    res.status(200).json({ success: true, message: "Deleted" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 // Filters / search / byId
 export const getUniqueFilters = async (req, res) => {
   try {
-    const categories = await Place.distinct('category');
-    const districts = await Place.distinct('district');
+    const categories = await Place.distinct("category");
+    const districts = await Place.distinct("district");
     res.status(200).json({ success: true, categories, districts });
   } catch (error) {
-    console.error('Error fetching filters:', error.message);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching filters:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -309,32 +343,58 @@ export const searchPlaces = async (req, res) => {
   if (!query)
     return res
       .status(400)
-      .json({ success: false, message: 'Search query missing' });
+      .json({ success: false, message: "Search query missing" });
   try {
     const results = await Place.find({
-      name: { $regex: query, $options: 'i' },
+      name: { $regex: query, $options: "i" },
     });
     res.status(200).json({ success: true, data: results });
   } catch (error) {
-    console.error('Search error:', error.message);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Search error:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
+// GET single place with review stats
 export const getPlaceById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ success: false, message: 'Invalid place ID' });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid place ID" });
   }
+
   try {
     const place = await Place.findById(id);
-    if (!place)
+    if (!place) {
       return res
         .status(404)
-        .json({ success: false, message: 'Place not found' });
-    res.status(200).json({ success: true, data: place });
+        .json({ success: false, message: "Place not found" });
+    }
+
+    const stats = await Review.aggregate([
+      { $match: { place: place._id } },
+      {
+        $group: {
+          _id: "$place",
+          avgRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const s = stats[0] || { avgRating: 0, totalReviews: 0 };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...place.toObject(),
+        avgRating: Number(s.avgRating?.toFixed(1) || 0),
+        totalReviews: s.totalReviews,
+      },
+    });
   } catch (error) {
-    console.error('Error fetching place by ID:', error.message);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("❌ getPlaceById error:", error.message);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
