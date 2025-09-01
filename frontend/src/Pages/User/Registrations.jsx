@@ -106,12 +106,8 @@ export default function Registrations() {
     createEditRequest,
   } = useRegistrationStore();
   const { places, fetchPlaces } = usePlaceStore();
-<<<<<<< HEAD
   const { reviews, createReview, deleteReview, fetchReviews } =
     useReviewStore();
-=======
-  const { createReview } = useReviewStore();
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
 
   const [loading, setLoading] = useState(true);
 
@@ -281,7 +277,6 @@ export default function Registrations() {
     }
   };
 
-<<<<<<< HEAD
   // Delete review
   const handleDeleteReview = async (reviewId) => {
     const res = await deleteReview(reviewId, user._id);
@@ -289,8 +284,6 @@ export default function Registrations() {
     else toast.error(res.message || "Failed to delete review");
   };
 
-=======
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
   return (
     <div className="max-w-6xl mx-auto px-6 py-24 bg-white/10 backdrop-blur-sm">
       <Toaster position="top-center" />
@@ -347,7 +340,6 @@ export default function Registrations() {
                 const canCancel =
                   r.status === "pending" || r.status === "approved";
                 const canReview = r.status === "completed";
-<<<<<<< HEAD
 
                 // find if this reg already has a review
                 const existingReview = reviews.find(
@@ -355,8 +347,6 @@ export default function Registrations() {
                     String(rev.registration) === String(r._id) &&
                     String(rev.user?._id) === String(user._id)
                 );
-=======
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
 
                 return (
                   <tr
@@ -440,7 +430,6 @@ export default function Registrations() {
                           Cancel
                         </button>
 
-<<<<<<< HEAD
                         {/* Review / Delete Review */}
                         {existingReview ? (
                           <button
@@ -464,20 +453,6 @@ export default function Registrations() {
                             Write Review
                           </button>
                         )}
-=======
-                        {/* Review */}
-                        <button
-                          onClick={() => setReviewingReg(r)}
-                          disabled={!canReview}
-                          className={`px-3 py-1.5 text-xs rounded border ${
-                            canReview
-                              ? "border-blue-300 text-blue-700 hover:bg-blue-50"
-                              : "border-gray-200 text-gray-400 cursor-not-allowed"
-                          }`}
-                        >
-                          Write Review
-                        </button>
->>>>>>> ceabd7b28c7de71e4eb8549276d0159b6924d407
                       </div>
                     </td>
                   </tr>
