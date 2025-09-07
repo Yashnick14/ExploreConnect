@@ -282,6 +282,17 @@ const PlaceModal = ({
                 <span>Pets Allowed</span>
               </label>
 
+              {/* Exclusive Place ✅ */}
+              <label className="flex items-center gap-2 md:col-start-2">
+                <input
+                  type="checkbox"
+                  name="exclusive"
+                  checked={form.exclusive}
+                  onChange={handleChange}
+                />
+                <span>Exclusive Place</span>
+              </label>
+
               {/* Hidden: weekly JSON */}
               <input
                 type="hidden"
@@ -349,6 +360,7 @@ PlaceModal.propTypes = {
     lat: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     lng: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     petsAllowed: PropTypes.bool,
+    exclusive: PropTypes.bool,
     removedIndexes: PropTypes.array,
   }).isRequired,
   setForm: PropTypes.func.isRequired,

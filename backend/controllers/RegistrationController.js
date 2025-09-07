@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import Registration from "../models/RegistrationsModel.js";
 import RegistrationEditRequest from "../models/RegistrationEditModel.js"; // <-- NEW
+import User from "../models/UserModel.js";
 
 // dd/MM/yyyy -> Date
 function parseDDMMYYYY(str) {
@@ -9,7 +10,8 @@ function parseDDMMYYYY(str) {
   const [dd, mm, yyyy] = str.split("/").map(Number);
   if (!dd || !mm || !yyyy) return null;
   const d = new Date(yyyy, mm - 1, dd);
-  if (d.getFullYear() !== yyyy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+  if (d.getFullYear() !== yyyy || d.getMonth() !== mm - 1 || d.getDate() !== dd)
+    return null;
   return d;
 }
 
@@ -19,22 +21,36 @@ export const createRegistration = async (req, res) => {
     const { placeId, name, email, phone, date, time, people } = req.body;
 
     if (!placeId || !mongoose.Types.ObjectId.isValid(placeId)) {
-      return res.status(400).json({ success: false, message: "Invalid placeId" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid placeId" });
     }
     if (!name || !email || !phone || !date || !time) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
     }
 
     const dateObj = parseDDMMYYYY(date);
     if (!dateObj) {
-      return res.status(400).json({ success: false, message: "Date must be DD/MM/YYYY" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Date must be DD/MM/YYYY" });
     }
 
     // ---- DUPLICATE CHECK (same user, place & calendar date; pending/approved) ----
     const emailLower = String(email).toLowerCase();
     // Use a day range to be robust to any stored time component
-    const startOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-    const endOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate() + 1);
+    const startOfDay = new Date(
+      dateObj.getFullYear(),
+      dateObj.getMonth(),
+      dateObj.getDate()
+    );
+    const endOfDay = new Date(
+      dateObj.getFullYear(),
+      dateObj.getMonth(),
+      dateObj.getDate() + 1
+    );
 
     const existing = await Registration.findOne({
       place: placeId,
@@ -115,7 +131,8 @@ export const getRegistrationById = async (req, res) => {
 
   try {
     const reg = await Registration.findById(id);
-    if (!reg) return res.status(404).json({ success: false, message: "Not found" });
+    if (!reg)
+      return res.status(404).json({ success: false, message: "Not found" });
     res.status(200).json({ success: true, data: reg });
   } catch (err) {
     console.error("Get registration error:", err);
@@ -130,26 +147,59 @@ export const updateRegistration = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid ID" });
 
   try {
-    const allowed = ["status", "name", "email", "phone", "date", "time", "people", "place"];
+    const allowed = [
+      "status",
+      "name",
+      "email",
+      "phone",
+      "date",
+      "time",
+      "people",
+      "place",
+    ];
     const patch = {};
     for (const k of allowed) {
       if (typeof req.body[k] !== "undefined") patch[k] = req.body[k];
     }
 
-    if (patch.status && !["pending", "approved", "completed", "cancelled"].includes(patch.status)) {
-      return res.status(400).json({ success: false, message: "Invalid status" });
+    if (
+      patch.status &&
+      !["pending", "approved", "completed", "cancelled"].includes(patch.status)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid status" });
     }
 
     if (typeof patch.date === "string") {
       const d = parseDDMMYYYY(patch.date);
-      if (!d) return res.status(400).json({ success: false, message: "Date must be DD/MM/YYYY" });
+      if (!d)
+        return res
+          .status(400)
+          .json({ success: false, message: "Date must be DD/MM/YYYY" });
       patch.date = d;
     }
 
-    if (typeof patch.people !== "undefined") patch.people = Number(patch.people || 1);
+    if (typeof patch.people !== "undefined")
+      patch.people = Number(patch.people || 1);
 
-    const updated = await Registration.findByIdAndUpdate(id, patch, { new: true });
-    if (!updated) return res.status(404).json({ success: false, message: "Not found" });
+    const updated = await Registration.findByIdAndUpdate(id, patch, {
+      new: true,
+    });
+    if (!updated)
+      return res.status(404).json({ success: false, message: "Not found" });
+
+    // ✅ Award points if status changed to completed
+    if (patch.status === "completed") {
+      const user = await User.findOne({ email: updated.email });
+      if (user) {
+        user.membership.points = (user.membership.points || 0) + 10;
+        await user.save();
+        console.log(
+          `✅ Added 10 points to ${user.email}, total: ${user.membership.points}`
+        );
+      }
+    }
 
     res.status(200).json({ success: true, data: updated });
   } catch (err) {
@@ -180,25 +230,41 @@ export const createEditRequest = async (req, res) => {
     const { email, phone, time, people, date, status } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid registration id" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid registration id" });
     }
     if (!email) {
       return res.status(400).json({ success: false, message: "Missing email" });
     }
 
     const reg = await Registration.findById(id);
-    if (!reg) return res.status(404).json({ success: false, message: "Registration not found" });
+    if (!reg)
+      return res
+        .status(404)
+        .json({ success: false, message: "Registration not found" });
     if (String(reg.email).toLowerCase() !== String(email).toLowerCase()) {
-      return res.status(403).json({ success: false, message: "Not allowed to edit this registration" });
+      return res.status(403).json({
+        success: false,
+        message: "Not allowed to edit this registration",
+      });
     }
 
     // prevent duplicate pending request
-    const existing = await RegistrationEditRequest.findOne({ registration: reg._id, status: "pending" });
+    const existing = await RegistrationEditRequest.findOne({
+      registration: reg._id,
+      status: "pending",
+    });
     if (existing) {
-      return res.status(409).json({ success: false, message: "There is already a pending edit request for this registration" });
+      return res.status(409).json({
+        success: false,
+        message:
+          "There is already a pending edit request for this registration",
+      });
     }
 
-    const safeStatus = typeof status === "string" ? status.toLowerCase() : undefined;
+    const safeStatus =
+      typeof status === "string" ? status.toLowerCase() : undefined;
     const patch = {
       phone: typeof phone !== "undefined" ? phone : reg.phone,
       time: typeof time !== "undefined" ? time : reg.time,
@@ -207,7 +273,10 @@ export const createEditRequest = async (req, res) => {
     };
 
     // Only allow specific statuses through edit-requests
-    if (safeStatus && ["pending", "approved", "completed", "cancelled"].includes(safeStatus)) {
+    if (
+      safeStatus &&
+      ["pending", "approved", "completed", "cancelled"].includes(safeStatus)
+    ) {
       patch.status = safeStatus;
     }
 
@@ -241,7 +310,10 @@ export const listEditRequests = async (req, res) => {
 
     const rows = await RegistrationEditRequest.find(filter)
       .sort({ createdAt: -1 })
-      .populate({ path: "registration", select: "place name email phone date time people status" });
+      .populate({
+        path: "registration",
+        select: "place name email phone date time people status",
+      });
 
     return res.status(200).json({ success: true, data: rows });
   } catch (err) {
@@ -257,8 +329,14 @@ export const actOnEditRequest = async (req, res) => {
     const { action, adminNote } = req.body;
 
     const reqDoc = await RegistrationEditRequest.findById(rid);
-    if (!reqDoc) return res.status(404).json({ success: false, message: "Request not found" });
-    if (reqDoc.status !== "pending") return res.status(400).json({ success: false, message: "Already resolved" });
+    if (!reqDoc)
+      return res
+        .status(404)
+        .json({ success: false, message: "Request not found" });
+    if (reqDoc.status !== "pending")
+      return res
+        .status(400)
+        .json({ success: false, message: "Already resolved" });
 
     if (action === "reject") {
       reqDoc.status = "rejected";
@@ -269,20 +347,31 @@ export const actOnEditRequest = async (req, res) => {
 
     if (action === "approve") {
       const reg = await Registration.findById(reqDoc.registration);
-      if (!reg) return res.status(404).json({ success: false, message: "Original registration not found" });
+      if (!reg)
+        return res
+          .status(404)
+          .json({ success: false, message: "Original registration not found" });
 
       const patch = reqDoc.patch || {};
 
       // Apply patch fields
-      if (typeof patch.people !== "undefined") reg.people = Number(patch.people || 1);
+      if (typeof patch.people !== "undefined")
+        reg.people = Number(patch.people || 1);
       if (typeof patch.phone !== "undefined") reg.phone = patch.phone;
       if (typeof patch.time !== "undefined") reg.time = patch.time;
       if (typeof patch.date !== "undefined" && patch.date) {
         const d = parseDDMMYYYY(patch.date);
-        if (!d) return res.status(400).json({ success: false, message: "Invalid date format in request" });
+        if (!d)
+          return res.status(400).json({
+            success: false,
+            message: "Invalid date format in request",
+          });
         reg.date = d;
       }
-      if (typeof patch.status === "string" && ["pending", "approved", "completed", "cancelled"].includes(patch.status)) {
+      if (
+        typeof patch.status === "string" &&
+        ["pending", "approved", "completed", "cancelled"].includes(patch.status)
+      ) {
         reg.status = patch.status;
       }
 

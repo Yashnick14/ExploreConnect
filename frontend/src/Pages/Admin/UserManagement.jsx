@@ -6,28 +6,16 @@ import { useUserStore } from "../../store/User/user";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FiMenu } from "react-icons/fi";
+import { MdWarningAmber } from "react-icons/md";
 
-const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
+/* ===== General Delete Modal ===== */
+const GeneralDeleteModal = ({ onCancel, onConfirm, user }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
-      <div className="flex items-center justify-center p-4 bg-red-100 rounded-full">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M2.875 5.75h1.917m0 0h15.333m-15.333 0v13.417a1.917 1.917 0 0 0 1.916 1.916h9.584a1.917 1.917 0 0 0 1.916-1.916V5.75m-10.541 0V3.833a1.917 1.917 0 0 1 1.916-1.916h3.834a1.917 1.917 0 0 1 1.916 1.916V5.75m-5.75 4.792v5.75m3.834-5.75v5.75"
-            stroke="#DC2626"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-      <h2 className="text-gray-900 font-semibold mt-4 text-xl">
-        Are you sure?
-      </h2>
-      <p className="text-sm text-gray-600 mt-2 text-center">
-        Do you really want to continue? This action
-        <br />
-        cannot be undone.
+      <h2 className="text-gray-900 font-semibold text-xl">Delete User</h2>
+      <p className="text-sm text-gray-600 mt-3 text-center">
+        Are you sure you want to delete{" "}
+        <span className="font-semibold">{user?.fullName || user?.email}</span>?
       </p>
       <div className="flex items-center justify-center gap-4 mt-5 w-full">
         <button
@@ -49,30 +37,100 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
+GeneralDeleteModal.propTypes = {
+  onCancel: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  user: PropTypes.object,
+};
+
+/* ===== Final Delete Confirmation Modal ===== */
+const DeleteConfirmModal = ({ onCancel, onConfirm, message }) => {
+  // Split incoming message by newlines and filter empty lines
+  const lines = (message || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+      <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
+        {/* Circle + warning icon */}
+        <div className="flex items-center justify-center p-4 bg-yellow-100 rounded-full">
+          <MdWarningAmber className="w-8 h-8 text-yellow-600" />
+        </div>
+
+        <h2 className="text-gray-900 font-bold mt-4 text-xl">Warning!</h2>
+
+        <div className="text-sm text-gray-600 mt-3 text-center">
+          {lines.length > 1 ? (
+            <>
+              <p className="mb-2">This user has:</p>
+              <ul className="text-left list-disc list-inside space-y-1">
+                {lines.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+              <p className="mt-3">
+                Do you still want to delete this user and all related data?
+              </p>
+            </>
+          ) : (
+            <p>{message}</p>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-center gap-4 mt-6 w-full">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-full md:w-36 h-10 rounded-md border border-gray-300 bg-white text-gray-600 font-medium text-sm hover:bg-gray-100 active:scale-95 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="w-full md:w-36 h-10 rounded-md text-white bg-red-600 font-medium text-sm hover:bg-red-700 active:scale-95 transition"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 DeleteConfirmModal.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onConfirm: PropTypes.func.isRequired,
+  message: PropTypes.string.isRequired,
 };
 
 const UserManagement = () => {
   const { users, fetchUsers, toggleStatus, deleteUser } = useUserStore();
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showGeneralModal, setShowGeneralModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
+  const selectedUser = users.find((u) => u._id === selectedUserId);
+
   const handleToggleStatus = async () => {
     if (!selectedUserId) return;
-    const selectedUser = users.find((u) => u._id === selectedUserId);
     const currentStatus = selectedUser?.status;
-
     const res = await toggleStatus(selectedUserId);
+
     if (res?.success) {
       toast.success(
-        `User ${currentStatus === "active" ? "deactivated" : "activated"} successfully`
+        `User ${
+          currentStatus === "active" ? "deactivated" : "activated"
+        } successfully`
       );
       setSelectedUserId(null);
     } else {
@@ -80,21 +138,42 @@ const UserManagement = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     if (!selectedUserId) return;
-    const res = await deleteUser(selectedUserId);
+    setShowGeneralModal(true); // always show first modal
+  };
+
+  const handleGeneralConfirm = async () => {
+    setShowGeneralModal(false);
+    const res = await deleteUser(selectedUserId, false); // force = false first
+
+    if (res?.requiresConfirmation) {
+      // 👉 open second modal
+      setDeleteMessage(res.message);
+      setShowDeleteModal(true);
+    } else if (res?.success) {
+      toast.success("User deleted successfully");
+      setSelectedUserId(null);
+    } else if (res?.message) {
+      toast.error(res.message);
+    }
+  };
+
+  const handleFinalConfirm = async () => {
+    const res = await deleteUser(selectedUserId, true); // force delete
     if (res?.success) {
       toast.success("User deleted successfully");
       setSelectedUserId(null);
+      setShowDeleteModal(false);
     } else {
-      toast.error("Failed to delete user");
+      toast.error(res?.message || "Failed to delete user");
+      setShowDeleteModal(false);
     }
-    setShowDeleteModal(false);
   };
 
   return (
     <div className="flex min-h-screen bg-gray-100 overflow-x-hidden relative">
-      {/* Mobile Toggle Button */}
+      {/* Sidebar Toggle (Mobile) */}
       <div className="fixed top-4 left-4 z-50 md:hidden">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -106,7 +185,9 @@ const UserManagement = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${isSidebarOpen ? "block" : "hidden"}`}
+        className={`fixed top-0 left-0 z-40 h-full bg-white md:static md:block ${
+          isSidebarOpen ? "block" : "hidden"
+        }`}
       >
         <Sidebar />
       </div>
@@ -131,12 +212,10 @@ const UserManagement = () => {
                 !selectedUserId ? "bg-gray-400" : "bg-black hover:bg-gray-800"
               }`}
             >
-              {users.find((u) => u._id === selectedUserId)?.status === "active"
-                ? "Deactivate"
-                : "Activate"}
+              {selectedUser?.status === "active" ? "Deactivate" : "Activate"}
             </button>
             <button
-              onClick={() => setShowDeleteModal(true)}
+              onClick={handleDeleteClick}
               disabled={!selectedUserId}
               className={`px-4 py-2 rounded text-white w-full sm:w-auto ${
                 !selectedUserId ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"
@@ -207,10 +286,19 @@ const UserManagement = () => {
           </table>
         </div>
 
+        {/* Modals */}
+        {showGeneralModal && (
+          <GeneralDeleteModal
+            user={selectedUser}
+            onCancel={() => setShowGeneralModal(false)}
+            onConfirm={handleGeneralConfirm}
+          />
+        )}
         {showDeleteModal && (
           <DeleteConfirmModal
+            message={deleteMessage}
             onCancel={() => setShowDeleteModal(false)}
-            onConfirm={handleDelete}
+            onConfirm={handleFinalConfirm}
           />
         )}
       </div>

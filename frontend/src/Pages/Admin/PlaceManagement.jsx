@@ -33,7 +33,6 @@ function normalizeWeeklyForUI(arr) {
   });
 }
 
-// EXACTLY like navbar
 const uploadURL = (file) =>
   file ? `http://localhost:5000/uploads/${file}` : null;
 
@@ -41,23 +40,6 @@ const uploadURL = (file) =>
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
     <div className="flex flex-col items-center bg-white shadow-md rounded-xl py-6 px-5 md:w-[460px] w-[370px] border border-gray-200">
-      <div className="flex items-center justify-center p-4 bg-red-100 rounded-full">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M2.875 5.75h1.917m0 0h15.333m-15.333 0v13.417a1.917 1.917 0 0 0 1.916 1.916h9.584a1.917 1.917 0 0 0 1.916-1.916V5.75m-10.541 0V3.833a1.917 1.917 0 0 1 1.916-1.916h3.834a1.917 1.917 0 0 1 1.916 1.916V5.75m-5.75 4.792v5.75m3.834-5.75v5.75"
-            stroke="#DC2626"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
       <h2 className="text-gray-900 font-semibold mt-4 text-xl">
         Are you sure?
       </h2>
@@ -113,6 +95,7 @@ const PlaceManagement = () => {
     workingHours: "",
     workingHoursWeekly: undefined,
     petsAllowed: false,
+    exclusive: false,
     lat: "",
     lng: "",
     removedIndexes: [],
@@ -120,7 +103,7 @@ const PlaceManagement = () => {
   const [form, setForm] = useState(defaultForm);
 
   useEffect(() => {
-    fetchPlaces();
+    fetchPlaces(); // ✅ Admin sees all automatically
   }, [fetchPlaces]);
 
   const handleChange = (e) => {
@@ -142,7 +125,6 @@ const PlaceManagement = () => {
     const p = places.find((x) => x._id === selectedPlaceId);
     if (!p) return;
 
-    // Pre-fill modal images using the SAME absolute URL style as navbar
     const paddedImages = [...(p.images || []).map(uploadURL)];
     while (paddedImages.length < 4) paddedImages.push(null);
 
@@ -159,6 +141,7 @@ const PlaceManagement = () => {
       workingHours: p.workingHours,
       workingHoursWeekly: uiWeekly ? JSON.stringify(uiWeekly) : undefined,
       petsAllowed: p.petsAllowed,
+      exclusive: !!p.exclusive,
       lat: p.lat?.toString() || "",
       lng: p.lng?.toString() || "",
       removedIndexes: [],
@@ -179,7 +162,7 @@ const PlaceManagement = () => {
     const { success, message } = await deletePlace(selectedPlaceId);
     if (success) {
       toast.success("Place deleted successfully");
-      fetchPlaces();
+      fetchPlaces(); // ✅ refresh
       setSelectedPlaceId(null);
     } else {
       toast.error(message || "Failed to delete place.");
@@ -214,7 +197,7 @@ const PlaceManagement = () => {
       toast.success(
         isEditMode ? "Place updated successfully" : "Place added successfully"
       );
-      fetchPlaces();
+      fetchPlaces(); // ✅ refresh
       setShowModal(false);
       setForm(defaultForm);
       setIsEditMode(false);
@@ -231,7 +214,7 @@ const PlaceManagement = () => {
     setIsEditMode(false);
     setEditingPlace(null);
     setSelectedPlaceId(null);
-    fetchPlaces();
+    fetchPlaces(); // ✅ refresh
   };
 
   return (
@@ -308,18 +291,19 @@ const PlaceManagement = () => {
                 <th className="px-4 py-3 text-left">Category</th>
                 <th className="px-4 py-3 text-left">Hours</th>
                 <th className="px-4 py-3 text-left">Pets</th>
+                <th className="px-4 py-3 text-left">Exclusive</th>
               </tr>
             </thead>
             <tbody>
               {places.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-6 text-gray-500">
+                  <td colSpan="9" className="text-center py-6 text-gray-500">
                     No places available.
                   </td>
                 </tr>
               ) : (
                 places.map((p, i) => {
-                  const img = uploadURL(p.images?.[0]); // same as navbar
+                  const img = uploadURL(p.images?.[0]);
                   return (
                     <tr
                       key={p._id}
@@ -361,6 +345,13 @@ const PlaceManagement = () => {
                           <span className="text-green-600">Yes</span>
                         ) : (
                           <span className="text-red-600">No</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {p.exclusive ? (
+                          <span className="text-emerald-600">Exclusive</span>
+                        ) : (
+                          <span className="text-gray-500">Normal</span>
                         )}
                       </td>
                     </tr>

@@ -74,12 +74,13 @@ export default function WeatherWidget({
 
   return (
     <div
-      className={`rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-sm shadow-sm ${className}`}
+      className={`rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-md shadow-sm text-gray-900 ${className}`}
     >
+      {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
         {!loading && data?.current?.time && (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-700">
             {new Date(data.current.time).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -88,14 +89,16 @@ export default function WeatherWidget({
         )}
       </div>
 
+      {/* States */}
       {loading && (
-        <div className="p-4 text-sm text-gray-600">Loading weather…</div>
+        <div className="p-4 text-sm text-gray-800">Loading weather…</div>
       )}
       {error && <div className="p-4 text-sm text-red-600">Error: {error}</div>}
 
+      {/* Content */}
       {!loading && !error && data?.current && (
         <div className="p-4">
-          {/* Current */}
+          {/* Current weather */}
           <div className="flex items-center gap-4">
             <div className="text-4xl" translate="no">
               {(codeMap[data.current.weather_code] || ["", "🌡️"])[1]}
@@ -104,7 +107,7 @@ export default function WeatherWidget({
               <div className="text-2xl font-bold" translate="no">
                 {Math.round(data.current.temperature_2m)}°C
               </div>
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-gray-800">
                 {(codeMap[data.current.weather_code] || ["—"])[0]} • Feels{" "}
                 {Math.round(data.current.apparent_temperature)}°C • Humidity{" "}
                 {data.current.relative_humidity_2m}% • Wind{" "}
@@ -113,7 +116,7 @@ export default function WeatherWidget({
             </div>
           </div>
 
-          {/* 5-day */}
+          {/* 5-day forecast */}
           {data.daily && (
             <div className="mt-4 grid grid-cols-5 gap-2 text-center">
               {data.daily.time.slice(0, 5).map((d, i) => {
@@ -129,17 +132,18 @@ export default function WeatherWidget({
                 return (
                   <div
                     key={d}
-                    className="rounded-lg border border-gray-200 p-2"
+                    className="rounded-lg border border-gray-200 p-2 bg-white/70"
                   >
-                    <div className="text-xs text-gray-600">{day}</div>
+                    <div className="text-xs text-gray-800">{day}</div>
                     <div className="text-xl" translate="no">
                       {icon}
                     </div>
                     <div className="forecast-card">
-                      <span className="forecast-text">{label}</span>
+                      <span className="forecast-text text-gray-900 font-medium">
+                        {label}
+                      </span>
                     </div>
-
-                    <div className="mt-1 text-sm font-medium">
+                    <div className="mt-1 text-sm font-semibold text-gray-900">
                       {tMax}° / {tMin}°
                     </div>
                   </div>

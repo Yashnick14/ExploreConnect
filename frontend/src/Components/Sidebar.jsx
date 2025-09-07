@@ -14,6 +14,7 @@ import logo from "../assets/logoadmin.png";
 import { useAuthStore } from "@/store/Auth/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../Firebase";
+import { MdCardMembership } from "react-icons/md";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -38,7 +39,7 @@ const Sidebar = () => {
       console.warn("server logout failed (ignored):", e?.message);
     }
 
-    logoutStore();                // clear zustand + localStorage
+    logoutStore(); // clear zustand + localStorage
     navigate("/login", { replace: true });
   };
 
@@ -48,7 +49,9 @@ const Sidebar = () => {
 
   return (
     <aside className="w-48 sm:w-56 md:w-64 h-screen fixed top-0 left-0 p-3 sm:p-4 md:p-5 bg-gradient-to-b from-black via-[#032915] to-[#032915] text-white shadow-lg z-50">
-      <div className={`${isAdminDashboard ? "pt-6 sm:pt-4 md:pt-0" : "pt-12 md:pt-0"}`}>
+      <div
+        className={`${isAdminDashboard ? "pt-6 sm:pt-4 md:pt-0" : "pt-12 md:pt-0"}`}
+      >
         <img
           src={logo}
           alt="ExploreConnect Logo"
@@ -84,6 +87,16 @@ const Sidebar = () => {
           >
             <HiOutlineUserGroup className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
             <span className="truncate">Users</span>
+          </NavLink>
+
+          <NavLink
+            to="/members-management"
+            className={({ isActive }) =>
+              `${baseLinkClasses} ${isActive ? activeLinkClasses : "hover:bg-emerald-700/50"}`
+            }
+          >
+            <MdCardMembership className="text-emerald-300 text-lg sm:text-base flex-shrink-0" />
+            <span className="truncate">Members</span>
           </NavLink>
 
           <NavLink

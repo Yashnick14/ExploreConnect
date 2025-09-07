@@ -20,6 +20,8 @@ import { useAuthStore } from "@/store/Auth/auth";
 import { usePlaceStore } from "@/store/Place/place";
 import { useRegistrationStore } from "@/store/User/Registration";
 import { useFavoritesStore } from "@/store/User/Favorite";
+import { useReviewStore } from "@/store/User/Review";
+
 import RegisterModal from "@/Components/RegisterModal";
 import PlaceMap from "@/Components/PlaceMap";
 import WeatherWidget from "@/Components/WeatherWidget";
@@ -36,6 +38,7 @@ const LABEL = {
   Sat: "Saturday",
   Sun: "Sunday",
 };
+
 const to12h = (hhmm) => {
   if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return "";
   let [h, m] = hhmm.split(":").map(Number);
@@ -126,35 +129,13 @@ const parseDailyRangeFromString = (hoursStr) => {
   return start == null || end == null ? null : [start, end];
 };
 
-/* ---------------- dummy reviews data ---------------- */
-const reviewsData = [
-  {
-    img: "https://readymadeui.com/team-2.webp",
-    name: "Daniel Kim",
-    title: "Beautiful and Relaxing Spot",
-    time: "2 days ago",
-    text: "The place was stunning with a calm atmosphere. The views were breathtaking, and it felt like the perfect escape from the city. Definitely worth visiting!",
-  },
-  {
-    img: "https://readymadeui.com/team-3.webp",
-    name: "Emily Carter",
-    title: "Great Experience Overall",
-    time: "3 days ago",
-    text: "I really enjoyed my time here. The surroundings were clean, staff was friendly, and the facilities were well maintained. I’d recommend this place to friends and family!",
-  },
-];
-
 const PlacePreview = () => {
   const { id } = useParams();
   const { getPlaceById } = usePlaceStore();
-
-  // ⬇️ pull both createRegistration and hasBlockedRegistration
   const { createRegistration, hasBlockedRegistration } = useRegistrationStore();
-
   const { user, loadUserFromStorage } = useAuthStore();
-
-  // favorites store
   const { favoriteIds, fetchFavorites, toggleFavorite } = useFavoritesStore();
+  const { reviews, fetchReviews } = useReviewStore();
 
   const [place, setPlace] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -178,11 +159,13 @@ const PlacePreview = () => {
   useEffect(() => {
     (async () => {
       const res = await getPlaceById(id);
-      if (res.success) setPlace(res.data);
-      else toast.error(res.message || "Place not found");
+      if (res.success) {
+        setPlace(res.data);
+        await fetchReviews(res.data._id);
+      } else toast.error(res.message || "Place not found");
       setLoading(false);
     })();
-  }, [id, getPlaceById]);
+  }, [id, getPlaceById, fetchReviews]);
 
   useEffect(() => {
     if (user?.email && !isAnonymous) {
@@ -246,7 +229,6 @@ const PlacePreview = () => {
   const handleRegisterSubmit = async (payload) => {
     if (!place?._id) return toast.error("Missing place id");
 
-    // basic field and time validation (unchanged)
     const [dd, mm, yyyy] = (payload.date || "").split("/").map(Number);
     const userDate = dd && mm && yyyy ? new Date(yyyy, mm - 1, dd) : null;
     const userTimeMin = parseUserTimeToMinutes(payload.time);
@@ -259,23 +241,21 @@ const PlacePreview = () => {
     )
       return toast.error("Please fill all fields (valid date & time).");
 
-    // ⛔️ NEW: block if a pending/approved registration already exists for this place+date
     try {
       const { exists } = await hasBlockedRegistration({
         email: (user?.email || payload.email || "").trim(),
         placeId: place._id,
-        date: payload.date, // "DD/MM/YYYY"
+        date: payload.date,
       });
       if (exists) {
         return toast.error(
           "You already have a registration (pending/approved) for this place on this date."
         );
       }
-    } catch {
-      // If the check fails silently, we still let server enforce it.
+    } catch (err) {
+      console.warn("hasBlockedRegistration failed:", err);
     }
 
-    // opening hours validation (unchanged)
     let openMin = null,
       closeMin = null;
     if (Array.isArray(weekly) && weekly.length === 7) {
@@ -372,7 +352,9 @@ const PlacePreview = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-10">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">{place.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            {place.name}
+          </h1>
           <div className="flex items-center gap-3">
             <button
               onClick={handleFavoriteClick}
@@ -426,7 +408,7 @@ const PlacePreview = () => {
         {/* About card */}
         <section>
           <div className="px-6 py-5">
-            <h2 className="text-xl font-semibold mb-2">About</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900">About</h2>
             <p className="text-gray-700 leading-relaxed">{place.description}</p>
           </div>
         </section>
@@ -460,7 +442,7 @@ const PlacePreview = () => {
             {hasCoords && (
               <section>
                 <div className="px-6 pt-5">
-                  <h2 className="text-xl font-semibold mb-3">
+                  <h2 className="text-xl font-semibold mb-3 text-gray-900">
                     Location on Map
                   </h2>
                 </div>
@@ -479,51 +461,67 @@ const PlacePreview = () => {
             {/* Reviews card */}
             <section>
               <div className="px-6 py-5">
-                <h2 className="text-xl font-semibold mb-4">All reviews</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900">
+                  All reviews
+                </h2>
                 <div className="divide-y divide-gray-200">
-                  {reviewsData.map((r, idx) => (
-                    <div key={idx} className="py-6">
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={r.img}
-                          alt={r.name}
-                          className="w-12 h-12 rounded-full border-2 border-gray-300"
-                        />
-                        <div>
-                          <p className="text-[15px] font-semibold text-gray-900">
-                            {r.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-green-600/20">
-                              <BsPatchCheckFill className="w-3 h-3 text-green-700" />
-                            </span>
-                            <p className="text-xs text-gray-600">
-                              Verified Traveller
+                  {reviews.length === 0 ? (
+                    <p className="text-gray-500">No reviews yet.</p>
+                  ) : (
+                    reviews.map((r, idx) => (
+                      <div key={idx} className="py-6">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={
+                              r.user?.avatar ||
+                              "https://placehold.co/48x48?text=👤"
+                            }
+                            alt={r.user?.fullName || "User"}
+                            className="w-12 h-12 rounded-full border-2 border-gray-300"
+                          />
+                          <div>
+                            <p className="text-[15px] font-semibold text-gray-900">
+                              {r.user?.fullName ||
+                                r.user?.username ||
+                                r.user?.email ||
+                                "Traveller"}
                             </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="w-4 h-4 flex items-center justify-center rounded-full bg-green-600/20">
+                                <BsPatchCheckFill className="w-3 h-3 text-green-700" />
+                              </span>
+                              <p className="text-xs text-gray-600">
+                                Verified Traveller
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="mt-4">
-                        <h6 className="font-semibold text-gray-900">
-                          {r.title}
-                        </h6>
-                        <div className="flex items-center mt-2 space-x-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <AiFillStar
-                              key={i}
-                              className="w-[18px] h-[18px] text-yellow-400"
-                            />
-                          ))}
-                          <span className="ml-2 text-sm text-gray-600">
-                            {r.time}
-                          </span>
+                        <div className="mt-4">
+                          <h6 className="font-semibold text-gray-900">
+                            {r.title}
+                          </h6>
+                          <div className="flex items-center mt-2 space-x-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <AiFillStar
+                                key={i}
+                                className={`w-[18px] h-[18px] ${
+                                  i < r.rating
+                                    ? "text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-sm text-gray-600">
+                              {new Date(r.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="mt-4 text-[15px] leading-relaxed text-gray-600">
+                            {r.comment}
+                          </p>
                         </div>
-                        <p className="mt-4 text-[15px] leading-relaxed text-gray-600">
-                          {r.text}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </section>
@@ -560,7 +558,9 @@ const PlacePreview = () => {
                     </span>
                   )}
                   <span
-                    className={`transition-transform ${hoursOpen ? "rotate-180" : ""}`}
+                    className={`transition-transform ${
+                      hoursOpen ? "rotate-180" : ""
+                    }`}
                   >
                     ▲
                   </span>
@@ -668,7 +668,7 @@ const PlacePreview = () => {
         </div>
       </div>
 
-      {/* Register Modal (prefilled) */}
+      {/* Register Modal */}
       {showRegister && (
         <RegisterModal
           key={user?.email || "guest"}

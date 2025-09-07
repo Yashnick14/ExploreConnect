@@ -14,6 +14,7 @@ import { toast } from "react-hot-toast";
 import { FcGoogle } from "react-icons/fc";
 import bgImage from "../../assets/login3.jpg";
 import { useAuthStore } from "@/store/Auth/auth";
+import { trackView } from "@/utils/TrackView";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -43,8 +44,12 @@ const Login = () => {
         setUser(backendUser);
         toast.success("Login successful");
 
-        if (role === "admin") navigate("/admin-dashboard", { replace: true });
-        else navigate("/home", { replace: true });
+        if (role === "admin") {
+          navigate("/admin-dashboard", { replace: true });
+        } else {
+          await trackView("/home"); // 🚀 always log non-admins
+          navigate("/home", { replace: true });
+        }
 
         return backendUser;
       } else {
@@ -170,6 +175,7 @@ const Login = () => {
       });
 
       toast.success("Logged in as Guest");
+      await trackView("/home"); // 🚀 log guest visit
       navigate("/home", { replace: true });
     } catch (err) {
       toast.error("Guest login failed: " + (err?.message || "Unknown error"));

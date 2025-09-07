@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useAuthStore } from "../Auth/auth";
 
 export const usePlaceStore = create((set) => ({
   places: [],
@@ -27,6 +28,7 @@ export const usePlaceStore = create((set) => ({
 
       // Boolean -> string for FormData
       fd.append("petsAllowed", String(!!newPlace.petsAllowed));
+      fd.append("exclusive", String(!!newPlace.exclusive));
 
       // Weekly JSON if present
       if (newPlace.workingHoursWeekly !== undefined) {
@@ -58,9 +60,19 @@ export const usePlaceStore = create((set) => ({
   },
 
   fetchPlaces: async () => {
-    const res = await fetch("/api/places");
-    const data = await res.json();
-    set({ places: data.data || [] });
+    try {
+      const user = useAuthStore.getState().user;
+      const userId = user?._id || "";
+      const isAdmin = user?.role === "admin";
+
+      const res = await fetch(
+        `/api/places?userId=${userId}&isAdmin=${isAdmin ? "true" : "false"}`
+      );
+      const data = await res.json();
+      set({ places: data.data || [] });
+    } catch (err) {
+      console.error("❌ fetchPlaces error:", err.message);
+    }
   },
 
   getPlaceById: async (id) => {
@@ -75,10 +87,15 @@ export const usePlaceStore = create((set) => ({
     }
   },
 
-  fetchLatestPlaces: async () => {
+  fetchLatestPlaces: async (isAdmin = false, userId = null) => {
     try {
-      const res = await fetch("/api/places/latest");
+      const query = new URLSearchParams();
+      if (isAdmin) query.append("isAdmin", "true");
+      if (userId) query.append("userId", userId);
+
+      const res = await fetch(`/api/places/latest?${query.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch latest places");
+
       const data = await res.json();
       set({ latestPlaces: data.data || [] });
     } catch (err) {
@@ -114,6 +131,7 @@ export const usePlaceStore = create((set) => ({
       ].forEach((key) => fd.append(key, upd[key]));
 
       fd.append("petsAllowed", String(!!upd.petsAllowed));
+      fd.append("exclusive", String(!!upd.exclusive));
 
       if (upd.workingHoursWeekly !== undefined) {
         const val =

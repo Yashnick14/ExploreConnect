@@ -77,8 +77,11 @@ const RegisterModal = ({
     today.getDate()
   );
 
-  const validatePhone = (value) =>
-    (value || "").replace(/\D+/g, "").length === 10;
+  // Accepts: +947XXXXXXXX (Sri Lanka format)
+  const validatePhone = (value) => {
+    const regex = /^\+94\d{9}$/;
+    return regex.test(value || "");
+  };
 
   // “10am” / “2pm” (no spaces)
   const validateTimeDetailed = (value) => {
@@ -104,7 +107,7 @@ const RegisterModal = ({
     let ok = true;
 
     if (!validatePhone(phone)) {
-      setPhoneError("Phone number must be exactly 10 digits.");
+      setPhoneError("Phone number must be in format +947XXXXXXXX.");
       ok = false;
     }
 
@@ -167,12 +170,12 @@ const RegisterModal = ({
                   <input
                     name="phone"
                     defaultValue={initial.phone || ""}
-                    placeholder="Phone number (10 digits)"
+                    placeholder="Phone number (+947XXXXXXXX)"
                     className={`w-full h-10 rounded-md border px-3 text-sm text-gray-800 placeholder-gray-400 ${
                       phoneError ? "border-red-500" : "border-gray-300"
                     }`}
-                    inputMode="numeric"
-                    pattern="\d{10}"
+                    inputMode="tel"
+                    pattern="^\+94\d{9}$"
                     aria-invalid={!!phoneError}
                     aria-describedby="phone-error"
                     required

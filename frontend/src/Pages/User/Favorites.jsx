@@ -30,12 +30,9 @@ const Favorites = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-24">
+    <div className="max-w-6xl mx-auto px-6 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Favorites</h1>
-        <Link to="/places" className="text-sm text-blue-600 hover:underline">
-          Browse places
-        </Link>
       </div>
 
       {favorites.length === 0 ? (
