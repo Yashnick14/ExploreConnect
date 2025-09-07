@@ -86,7 +86,9 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.listen(PORT, () => {
+app.get("/health", (req, res) => res.send("ok"));
+
+app.listen(PORT, "0.0.0.0", () => {
   connectDB();
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
