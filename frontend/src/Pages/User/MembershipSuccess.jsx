@@ -5,8 +5,8 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
 
-import badgeAnimation from "@/assets/lottie/badge.json";
-import confettiAnimation from "@/assets/lottie/confetti.json"; // 🎉 Confetti file
+import badgeAnimation from "@/assets/lottie/Badge.json";
+import confettiAnimation from "@/assets/lottie/Confetti.json"; // 🎉 Confetti file
 
 const MembershipSuccess = () => {
   const [searchParams] = useSearchParams();
