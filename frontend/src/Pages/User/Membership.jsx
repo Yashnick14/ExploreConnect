@@ -4,7 +4,7 @@ import axios from "axios";
 import bgImage from "../../assets/mount11.jpg";
 import { useAuthStore } from "@/store/Auth/auth";
 import Lottie from "lottie-react";
-import unlockAnimation from "@/assets/lottie/Unlock.json"; // 🔓 lock-unlock animation
+import unlockAnimation from "@/assets/Lottie/Unlock.json"; // 🔓 lock-unlock animation
 import { FiCheck, FiX } from "react-icons/fi"; // ✅ Import icons
 
 const Membership = () => {
