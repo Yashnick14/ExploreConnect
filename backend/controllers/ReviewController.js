@@ -99,3 +99,18 @@ export const deleteReview = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// Fetch all reviews by a user
+export const getReviewsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const reviews = await Review.find({ user: userId })
+      .populate("user", "fullName username email avatar")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: reviews });
+  } catch (err) {
+    console.error("❌ Error fetching user reviews:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
