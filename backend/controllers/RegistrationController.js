@@ -189,15 +189,21 @@ export const updateRegistration = async (req, res) => {
     if (!updated)
       return res.status(404).json({ success: false, message: "Not found" });
 
+    // ✅ If cancelled → delete any pending edit requests for this registration
+    if (patch.status === "cancelled") {
+      await RegistrationEditRequest.deleteMany({
+        registration: id,
+        status: "pending",
+      });
+      console.log(`🗑️ Pending edit requests deleted for registration ${id}`);
+    }
+
     // ✅ Award points if status changed to completed
     if (patch.status === "completed") {
       const user = await User.findOne({ email: updated.email });
       if (user) {
         user.membership.points = (user.membership.points || 0) + 10;
         await user.save();
-        console.log(
-          `✅ Added 10 points to ${user.email}, total: ${user.membership.points}`
-        );
       }
     }
 
