@@ -313,13 +313,13 @@ const Dashboard = () => {
           </div>
 
           <div>
-            {activeTab === "registrations" && <Registrations />}
-            {activeTab === "favorites" && <Favorites />}
+            {activeTab === "registrations" && <Registrations embedded />}
+            {activeTab === "favorites" && <Favorites embedded />}
           </div>
         </main>
       </div>
 
-      {/* ✅ Membership Modal */}
+      {/* Membership Modal */}
       <MembershipModal
         isOpen={membershipOpen}
         onClose={() => setMembershipOpen(false)}
