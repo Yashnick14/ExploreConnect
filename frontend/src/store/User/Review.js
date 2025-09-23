@@ -48,13 +48,18 @@ export const useReviewStore = create((set) => ({
   },
 
   // Fetch Reviews (Guard against missing placeId)
-  fetchReviews: async (placeId) => {
-    if (!placeId) {
-      return { success: false, message: "Missing placeId" };
-    }
-
+  fetchReviews: async (placeId, userId) => {
     try {
-      const res = await fetch(api(`/api/reviews/place/${placeId}`));
+      let url;
+      if (placeId) {
+        url = api(`/api/reviews/place/${placeId}`);
+      } else if (userId) {
+        url = api(`/api/reviews/user/${userId}`);
+      } else {
+        return { success: false, message: "Missing placeId or userId" };
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
 
       if (!res.ok || !data?.success) {
