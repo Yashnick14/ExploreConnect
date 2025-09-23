@@ -78,18 +78,6 @@ const HomePage = () => {
                     <p className="text-center text-base sm:text-lg uppercase mb-6 px-2">
                       {hero.subtext}
                     </p>
-
-                    {index === 1 && (
-                      <button className="mt-4 px-6 py-2 text-sm font-semibold bg-white/10 border border-white/30 rounded-full backdrop-blur-md hover:bg-white/20 transition">
-                        Discover More
-                      </button>
-                    )}
-
-                    {index === 2 && (
-                      <button className="mt-4 px-6 py-2 text-sm font-semibold bg-gradient-to-r from-emerald-600 to-green-700 rounded-full shadow-lg hover:opacity-90 transition">
-                        Start Planning
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
