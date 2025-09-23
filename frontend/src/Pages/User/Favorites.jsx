@@ -1,15 +1,21 @@
 import React, { useEffect } from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "@/store/Auth/auth";
 import { useFavoritesStore } from "@/store/User/Favorite";
 
-const Favorites = () => {
+const Favorites = ({ embedded = false }) => {
   const { user, loadUserFromStorage } = useAuthStore();
   const { favorites, fetchFavorites } = useFavoritesStore();
+
+  Favorites.propTypes = {
+    embedded: PropTypes.bool,
+  };
 
   useEffect(() => {
     loadUserFromStorage?.();
   }, [loadUserFromStorage]);
+
   useEffect(() => {
     if (user?.email) fetchFavorites(user.email);
   }, [user?.email, fetchFavorites]);
@@ -30,7 +36,9 @@ const Favorites = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6">
+    <div
+      className={`max-w-6xl mx-auto px-6 py-6 ${embedded ? "" : "pt-[100px]"}`}
+    >
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Favorites</h1>
       </div>
