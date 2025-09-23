@@ -87,9 +87,7 @@ const AdminDashboard = () => {
         );
         if (res.data.success) {
           setVisitorData(res.data.data || []);
-          setTotalVisitors(
-            res.data.data.reduce((sum, item) => sum + item.value, 0)
-          );
+          setTotalVisitors(res.data.total || 0); // 🟢 use backend total
         }
       } catch (err) {
         console.error("❌ Failed to fetch visitors:", err.message);
@@ -149,9 +147,10 @@ const AdminDashboard = () => {
               </div>
             ))}
           </section>
+          <br></br>
 
           {/* ===== Toggle Buttons (Shared) ===== */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-end gap-2 mt-8">
             {["weekly", "monthly"].map((opt) => (
               <button
                 key={opt}
@@ -172,7 +171,10 @@ const AdminDashboard = () => {
             {/* Revenue Chart */}
             <div className="p-4 bg-gray-200 rounded-xl shadow-lg border border-gray-200">
               <h2 className="text-m text-gray-500 mb-2">Membership Revenue</h2>
-              <p className="text-2xl font-semibold text-emerald-700 mb-4">
+              <p
+                className="text-2xl font-semibold text-blue-600 mb-4"
+                translate="no"
+              >
                 ${totalRevenue.toFixed(2)}
               </p>
 
@@ -196,14 +198,24 @@ const AdminDashboard = () => {
             {/* Visitors Chart */}
             <div className="p-4 bg-gray-200 rounded-xl shadow-lg border border-gray-200">
               <h2 className="text-m text-gray-500 mb-2">Visitors</h2>
-              <p className="text-2xl font-semibold text-blue-600 mb-4">
-                {totalVisitors.toLocaleString()}
+              <p
+                className="text-2xl font-semibold text-blue-600 mb-4"
+                translate="no"
+              >
+                {totalVisitors.toLocaleString()}{" "}
+                {/* ✅ shows weekly/monthly total */}
               </p>
 
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={visitorData}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="name" interval={0} tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="name"
+                    interval={0} // ✅ show every tick
+                    minTickGap={0} // ✅ prevent skipping
+                    padding={{ left: 10, right: 10 }}
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis allowDecimals={false} />
                   <Tooltip
                     cursor={{ fill: "transparent" }}
