@@ -10,7 +10,6 @@ const PlaceCard = ({ place }) => {
   const avg = place.avgRating || 0;
   const total = place.totalReviews || 0;
 
-  // Build star array (0–5) based on avgRating
   const renderStars = () => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -36,13 +35,21 @@ const PlaceCard = ({ place }) => {
   return (
     <Link
       to={`/places/${place._id}`}
-      className="block relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 hover:-translate-y-1"
+      className="group block relative bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-transform duration-300 hover:-translate-y-1"
     >
       {/* Premium Flag Badge */}
       {place.exclusive && (
-        <div className="absolute top-0 -left-8 z-20 -rotate-45 pointer-events-none">
-          <div className="bg-green-600 text-amber-300 shadow-md flex items-center justify-center w-[120px] py-2">
-            <FaCrown className="w-4 h-4" />
+        <div className="absolute top-0 left-4 z-20">
+          <div
+            className="relative w-8 h-8 bg-gradient-to-b from-red-600 to-red-900 rounded-b-md transition-all duration-500 ease-out 
+                       group-hover:h-16"
+            style={{
+              clipPath: "polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)",
+            }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              <FaCrown className="w-4 h-4 text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
           </div>
         </div>
       )}
@@ -50,9 +57,9 @@ const PlaceCard = ({ place }) => {
       {/* Pets Badge */}
       {place.petsAllowed && (
         <div className="absolute top-3 right-3 z-10">
-          <div className="group inline-flex items-center bg-emerald-100 text-emerald-700 font-medium rounded-full px-2 w-9 h-9 transition-all duration-500 ease-in-out overflow-hidden hover:w-32 hover:px-3 cursor-pointer">
+          <div className="group/pets inline-flex items-center bg-emerald-100 text-emerald-700 font-medium rounded-full px-2 w-9 h-9 transition-all duration-500 ease-in-out overflow-hidden hover:w-32 hover:px-3 cursor-pointer">
             <MdOutlinePets className="text-lg min-w-[1rem]" />
-            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs">
+            <span className="ml-2 whitespace-nowrap opacity-0 group-hover/pets:opacity-100 transition-opacity duration-300 text-xs">
               Pets Allowed
             </span>
           </div>
@@ -81,7 +88,6 @@ const PlaceCard = ({ place }) => {
           Open: {place.workingHours}
         </p>
 
-        {/* ⭐ Dynamic Stars + Rating */}
         {total > 0 ? (
           <div className="flex justify-center items-center gap-1">
             {renderStars()}
