@@ -7,7 +7,7 @@
     "server": "cross-env NODE_ENV=development nodemon backend/main.js",
     "stripe": "stripe listen --forward-to localhost:5000/api/stripe/webhook",
     "dev": "concurrently \"npm run server\" \"npm run stripe\"",
-    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend",
+    "build": "cd frontend && npm install && npm run build",
     "start": "cross-env NODE_ENV=production node backend/main.js",
     "test:selenium": "mocha tests/selenium.js --exit",
     "cypress:open": "cypress open",
