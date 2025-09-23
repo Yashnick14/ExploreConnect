@@ -97,7 +97,11 @@ StatusPill.propTypes = {
   status: PropTypes.string,
 };
 
-export default function Registrations() {
+Registrations.propTypes = {
+  embedded: PropTypes.bool,
+};
+
+export default function Registrations({ embedded = false }) {
   const { user, loadUserFromStorage } = useAuthStore();
   const {
     registrations,
@@ -134,10 +138,10 @@ export default function Registrations() {
         return;
       }
       await fetchRegistrations({ email: user.email });
-      await fetchReviews(""); // preload reviews
+      await fetchReviews(null, user._id); // ✅ fetch all reviews of this user
       setLoading(false);
     })();
-  }, [user?.email, fetchRegistrations, fetchReviews]);
+  }, [user?.email, user?._id, fetchRegistrations, fetchReviews]);
 
   useEffect(() => {
     if (!places || places.length === 0) fetchPlaces();
@@ -272,6 +276,9 @@ export default function Registrations() {
     if (res.success) {
       toast.success("Review submitted!");
       setReviewingReg(null);
+
+      // ✅ Refresh reviews to immediately reflect Delete Review button
+      await fetchReviews(null, user._id);
     } else {
       toast.error(res.message || "Failed to submit review");
     }
@@ -280,12 +287,20 @@ export default function Registrations() {
   // Delete review
   const handleDeleteReview = async (reviewId) => {
     const res = await deleteReview(reviewId, user._id);
-    if (res.success) toast.success("Review deleted!");
-    else toast.error(res.message || "Failed to delete review");
+    if (res.success) {
+      toast.success("Review deleted!");
+      await fetchReviews(null, user._id); // ✅ refresh after delete
+    } else {
+      toast.error(res.message || "Failed to delete review");
+    }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 bg-white/10 backdrop-blur-sm">
+    <div
+      className={`max-w-6xl mx-auto px-6 py-8 bg-white/10 backdrop-blur-sm ${
+        embedded ? "" : "pt-[100px]"
+      }`}
+    >
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">My Registrations</h1>
       </div>
@@ -337,7 +352,6 @@ export default function Registrations() {
                   r.status === "pending" || r.status === "approved";
                 const canReview = r.status === "completed";
 
-                // find if this reg already has a review
                 const existingReview = reviews.find(
                   (rev) =>
                     String(rev.registration) === String(r._id) &&
