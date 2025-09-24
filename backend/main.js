@@ -31,7 +31,8 @@ const __dirname = path.dirname(__filename);
 const allowedOrigins = [
   "http://localhost:5173", // Local frontend
   "http://localhost:5000",
-  "https://exploreconnect-f5a02.web.app", // Firebase deployed frontend
+  "https://exploreconnect-f5a02.web.app",
+  "https://exploreconnect.onrender.com", // Firebase deployed frontend
 ];
 
 app.use(
@@ -80,9 +81,14 @@ app.use("/api/stripe", stripeRouter);
 
 // Frontend serve for production
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../src/frontend/dist")));
+  const frontendPath = path.join(__dirname, "../src/frontend/dist");
+
+  // Serve all static assets (JS, CSS, images)
+  app.use(express.static(frontendPath));
+
+  // Always return index.html for React Router
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../src/frontend/dist", "index.html"));
+    res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
