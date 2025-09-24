@@ -7,7 +7,7 @@
     "server": "cross-env NODE_ENV=development nodemon backend/main.js",
     "stripe": "stripe listen --forward-to localhost:5000/api/stripe/webhook",
     "dev": "concurrently \"npm run server\" \"npm run stripe\"",
-    "build": "cd src/frontend && npm install && npm run build",
+    "build": "npm install && cd src/frontend && npm install && npm run build && cd ../..",
     "start": "node backend/main.js"
 
   },
