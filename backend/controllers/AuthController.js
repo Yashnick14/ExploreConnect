@@ -1,14 +1,31 @@
 import User from "../models/UserModel.js";
 import admin from "firebase-admin";
-import { createRequire } from "node:module";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const require = createRequire(import.meta.url);
-const serviceAccount = require("../firebaseServiceAccount.json");
-
+// ✅ Load Firebase service account from env
 if (!admin.apps.length) {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT env var is missing");
+  }
+
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(raw);
+
+    // Fix escaped newlines in private_key
+    if (serviceAccount.private_key?.includes("\\n")) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(
+        /\\n/g,
+        "\n"
+      );
+    }
+  } catch (err) {
+    throw new Error("Invalid FIREBASE_SERVICE_ACCOUNT JSON: " + err.message);
+  }
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
