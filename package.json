@@ -8,10 +8,8 @@
     "stripe": "stripe listen --forward-to localhost:5000/api/stripe/webhook",
     "dev": "concurrently \"npm run server\" \"npm run stripe\"",
     "build": "cd frontend && npm install && npm run build",
-    "start": "cross-env NODE_ENV=production node backend/main.js",
-    "test:selenium": "mocha tests/selenium.js --exit",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "start": "cross-env NODE_ENV=production node backend/main.js"
+
   },
   "keywords": [],
   "author": "",
@@ -33,14 +31,10 @@
     "twilio": "^5.9.0"
   },
   "devDependencies": {
-    "chai": "^6.0.1",
     "chromedriver": "^140.0.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.0.0",
-    "cypress": "^15.1.0",
     "eslint": "^9.33.0",
-    "mocha": "^11.7.2",
-    "nodemon": "^3.1.10",
-    "selenium-webdriver": "^4.35.0"
+    "nodemon": "^3.1.10"
   }
 }
