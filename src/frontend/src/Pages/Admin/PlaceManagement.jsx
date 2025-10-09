@@ -34,7 +34,7 @@ function normalizeWeeklyForUI(arr) {
 }
 
 const uploadURL = (file) =>
-  file ? `http://localhost:5000/uploads/${file}` : null;
+  file ? `${import.meta.env.VITE_API_BASE_URL}/uploads/${file}` : null;
 
 /* ---------- Delete confirm modal ---------- */
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
