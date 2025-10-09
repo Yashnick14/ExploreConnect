@@ -381,7 +381,7 @@ const PlacePreview = () => {
           <div className="space-y-4">
             <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-200">
               <img
-                src={`http://localhost:5000/uploads/${place.images[0]}`}
+                src={`${import.meta.env.VITE_API_BASE_URL}/uploads/${place.images[0]}`}
                 alt="Main"
                 className="w-full h-[420px] object-cover"
               />
@@ -394,7 +394,7 @@ const PlacePreview = () => {
                     className="rounded-xl overflow-hidden border border-gray-200"
                   >
                     <img
-                      src={`http://localhost:5000/uploads/${img}`}
+                      src={`${import.meta.env.VITE_API_BASE_URL}/uploads/${img}`}
                       alt={`Gallery ${i + 1}`}
                       className="w-full h-[200px] object-cover"
                     />
